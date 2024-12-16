@@ -1,0 +1,49 @@
+{
+  "project_info": {
+    "project_number": "861525505716",
+    "firebase_url": "https://academic-archival-system-default-rtdb.firebaseio.com",
+    "project_id": "academic-archival-system",
+    "storage_bucket": "academic-archival-system.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:861525505716:android:3c2b2933aa924779a5c9e1",
+        "android_client_info": {
+          "package_name": "com.archivalrecords.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBf_zIENEUG7BNUUxokLQa3AQv-t1OJthI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:861525505716:android:ddcd7b4c52540a9fa5c9e1",
+        "android_client_info": {
+          "package_name": "com.ocrscannerdoc.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBf_zIENEUG7BNUUxokLQa3AQv-t1OJthI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
