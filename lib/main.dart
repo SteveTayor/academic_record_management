@@ -15,5 +15,17 @@ void main() async {
 
   await settingsController.loadSettings();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  runApp(MyApp(settingsController: settingsController));
+// void main() async {
+//   WidgetsFlutterBinding.ensureInitialized();
+//   final settingsService = SettingsService();
+//   final settingsController = SettingsController(settingsService);
+
+//   try {
+//     await settingsController.loadSettings();
+//     await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+//     runApp(MyApp(settingsController: settingsController));
+//   } catch (e) {
+//     print('Error initializing app: $e');
+//   }
+// }  runApp(MyApp(settingsController: settingsController));
 }
