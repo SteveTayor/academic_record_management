@@ -1,0 +1,6 @@
+
+
+enum VerificationMethod {
+  email,
+  phone,
+}
