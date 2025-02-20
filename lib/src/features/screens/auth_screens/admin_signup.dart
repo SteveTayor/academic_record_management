@@ -36,9 +36,11 @@ class _AdminRegistrationPageState extends State<AdminRegistrationPage> {
   bool _isVerified = false;
   String _message = '';
 
-  var _obscureConfirmPassword = true;
+  bool _obscureConfirmPassword = true;
 
-  var _obscurePassword = true;
+  bool _obscurePassword = true;
+  
+  bool _isLoading = false;
 
   @override
   Widget build(BuildContext context) {
@@ -132,7 +134,12 @@ class _AdminRegistrationPageState extends State<AdminRegistrationPage> {
         spacing: 8,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(height: 15),
+          const Text('Sign Up',
+              style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold)),
+          Divider(
+            color: Colors.grey.withOpacity(.3),
+          ),
+          const SizedBox(height: 25),
           const Text('Full Name',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
 
@@ -155,6 +162,14 @@ class _AdminRegistrationPageState extends State<AdminRegistrationPage> {
                   size: 15, color: Colors.black),
               hintText: 'Enter your Full Name',
             ),
+            // onChanged: (value) {
+            //   setState(() {
+            //     _fullNameController.text = value;
+            //   });
+            //   if (value.isNullOrEmpty) 'Full Name is required.';
+            //   if (!value.isValidName) 'Enter a valid name.';
+            //   return null;
+            // },
             validator: (value) {
               if (value.isNullOrEmpty) return 'Full Name is required.';
               if (!value.isValidName) return 'Enter a valid name.';
@@ -184,6 +199,14 @@ class _AdminRegistrationPageState extends State<AdminRegistrationPage> {
               suffixIcon: const Icon(Icons.email_outlined,
                   size: 15, color: Colors.black),
             ),
+            // onChanged: (value) {
+            //   setState(() {
+            //     _emailController.text = value;
+            //   });
+            //   if (value.isNullOrEmpty) 'Email is required.';
+            //   if (!value.isValidEmail) 'Enter a valid email address.';
+            //   return null;
+            // },
             validator: (value) {
               if (value.isNullOrEmpty) return 'Email is required.';
               if (!value.isValidEmail) return 'Enter a valid email address.';
@@ -213,6 +236,14 @@ class _AdminRegistrationPageState extends State<AdminRegistrationPage> {
               suffixIcon: const Icon(Icons.phone_enabled_outlined,
                   size: 15, color: Colors.black),
             ),
+            // onChanged: (value) {
+            //   setState(() {
+            //     _phoneController.text = value;
+            //   });
+            //   if (value.isNullOrEmpty) 'Phone number is required.';
+            //   if (!value.isValidPhone) 'Enter a valid phone number.';
+            //   return null;
+            // },
             validator: (value) {
               if (value.isNullOrEmpty) return 'Phone number is required.';
               if (!value.isValidPhone) return 'Enter a valid phone number.';
@@ -255,6 +286,16 @@ class _AdminRegistrationPageState extends State<AdminRegistrationPage> {
                 ),
               ),
             ),
+            // onChanged: (value) {
+            //   setState(() {
+            //     _passwordController.text = value;
+            //   });
+            //   if (value.isNullOrEmpty) 'Password is required.';
+            //   if (!value.isValidPassword) {
+            //     'Password must be at least 8 characters and include uppercase, lowercase, digit, and special character.';
+            //   }
+            //   return null;
+            // },
             validator: (value) {
               if (value.isNullOrEmpty) return 'Password is required.';
               if (!value.isValidPassword) {
@@ -285,18 +326,30 @@ class _AdminRegistrationPageState extends State<AdminRegistrationPage> {
               border: InputBorder.none,
               hintText: 'Confirm Password',
               suffixIcon: InkWell(
-                  onTap: () {
-                    setState(() {
-                      _obscureConfirmPassword = !_obscureConfirmPassword;
-                    });
-                  },
-                  child: Icon(
-                      _obscureConfirmPassword
-                          ? Icons.lock_outline
-                          : Icons.remove_red_eye,
-                      size: 15,
-                      color: Colors.black)),
+                onTap: () {
+                  setState(() {
+                    _obscureConfirmPassword = !_obscureConfirmPassword;
+                  });
+                },
+                child: Icon(
+                  _obscureConfirmPassword
+                      ? Icons.lock_outline
+                      : Icons.remove_red_eye,
+                  size: 15,
+                  color: Colors.black,
+                ),
+              ),
             ),
+            // onChanged: (value) {
+            //   setState(() {
+            //     _confirmPasswordController.text = value;
+            //   });
+            //   if (value.isNullOrEmpty) 'Please confirm your password.';
+            //   if (!value.isPasswordMatch(_passwordController.text)) {
+            //     'Passwords do not match.';
+            //   }
+            //   return null;
+            // },
             validator: (String? value) {
               if (value!.isNullOrEmpty) return 'Please confirm your password.';
               if (!value.isPasswordMatch(_passwordController.text)) {
@@ -330,7 +383,7 @@ class _AdminRegistrationPageState extends State<AdminRegistrationPage> {
           ),
 
           Padding(
-            padding: const EdgeInsets.only(top: 25.0),
+            padding: const EdgeInsets.only(top: .0),
             child: Container(
               width: double.infinity,
               decoration: BoxDecoration(
@@ -340,7 +393,14 @@ class _AdminRegistrationPageState extends State<AdminRegistrationPage> {
               ),
               child: Padding(
                 padding: const EdgeInsets.all(8.0),
-                child: InkWell(
+                child: _isLoading
+                    ? const Center(
+                        child: CircularProgressIndicator(
+                          valueColor:
+                              AlwaysStoppedAnimation<Color>(Colors.white),
+                        ),
+                      )
+                    : InkWell(
                   onTap: _handleSignUp,
                   child: const Text('Sign Up',
                       textAlign: TextAlign.center,
@@ -358,7 +418,7 @@ class _AdminRegistrationPageState extends State<AdminRegistrationPage> {
                 TextSpan(
                   recognizer: TapGestureRecognizer()
                     ..onTap = () {
-                      // Navigate to the login screen.
+                      // Navigate to the login screen.redred
                       Navigator.push(context,
                           MaterialPageRoute(builder: (context) => LoginPage()));
                     },
@@ -392,15 +452,73 @@ class _AdminRegistrationPageState extends State<AdminRegistrationPage> {
           'A verification link has been sent to your email. Please verify.',
           textAlign: TextAlign.center,
         ),
-        ElevatedButton(
-          onPressed: _checkEmailVerificationStatus,
-          child: const Text('I have verified, continue'),
+
+        Row(
+          children: [
+            Container(
+                  decoration: BoxDecoration(
+                    backgroundBlendMode: BlendMode.darken,
+                    borderRadius: BorderRadius.circular(15),
+                    color: Colors.blue.shade800,
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: _isLoading
+                    ? const Center(
+                        child: CircularProgressIndicator(
+                          valueColor:
+                              AlwaysStoppedAnimation<Color>(Colors.white),
+                        ),
+                      )
+                    : InkWell(
+                      onTap: _checkEmailVerificationStatus,
+                      child: const Text('I have verified, continue',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(fontSize: 18, color: Colors.white)),
+                    ),
+                  ),
+                ),Container(
+              decoration: BoxDecoration(
+                backgroundBlendMode: BlendMode.darken,
+                borderRadius: BorderRadius.circular(15),
+                color: Colors.blue.shade800,
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: _isLoading
+                    ? const Center(
+                        child: CircularProgressIndicator(
+                          valueColor:
+                              AlwaysStoppedAnimation<Color>(Colors.white),
+                        ),
+                      )
+                    :InkWell(
+                  onTap: _resendEmailVerification,
+                  child: const Text('Resend Verification Email',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 18, color: Colors.white)),
+                ),
+              ),
+            ),
+          
+          ],
         ),
-        ElevatedButton(
-          onPressed: _resendEmailVerification,
-          child: const Text('Resend Verification Email'),
+        
+        // ElevatedButton(
+        //   onPressed: _checkEmailVerificationStatus,
+        //   child: const Text('I have verified, continue'),
+        // ),
+        // ElevatedButton(
+        //   onPressed: _resendEmailVerification,
+        //   child: const Text('Resend Verification Email'),
+        // ),
+        Text(
+          _message,
+          style: const TextStyle(
+            color: Colors.teal,
+            fontSize: 16,
+          ),
         ),
-        Text(_message, style: const TextStyle(color: Colors.red)),
       ],
     );
   }
@@ -427,7 +545,13 @@ class _AdminRegistrationPageState extends State<AdminRegistrationPage> {
               _verificationId == null ? null : _handlePhoneVerificationCode,
           child: const Text('Verify Phone'),
         ),
-        Text(_message, style: const TextStyle(color: Colors.red)),
+        Text(
+          _message,
+          style: const TextStyle(
+            color: Colors.teal,
+            fontSize: 16,
+          ),
+        ),
       ],
     );
   }
@@ -464,7 +588,12 @@ class _AdminRegistrationPageState extends State<AdminRegistrationPage> {
     final phone = _phoneController.text.trim();
     final pass = _passwordController.text;
 
-    setState(() => _message = '');
+    setState(() {
+
+     _message = '';
+     _isLoading=true;
+    }
+    );
 
     try {
       if (_verificationMethod == VerificationMethod.email) {

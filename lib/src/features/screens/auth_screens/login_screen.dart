@@ -30,6 +30,8 @@ class _LoginPageState extends State<LoginPage> {
   // Message for status and errors.
   String _message = '';
 
+  var _obscurePassword = true;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -93,6 +95,7 @@ class _LoginPageState extends State<LoginPage> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           spacing: 15,
                           children: [
+                            const SizedBox(height: 12),
                             const Text('Email',
                                 style: TextStyle(
                                     fontSize: 18, fontWeight: FontWeight.bold)),
@@ -117,14 +120,14 @@ class _LoginPageState extends State<LoginPage> {
                                 suffixIcon: const Icon(Icons.email_outlined,
                                     size: 15, color: Colors.black),
                               ),
-                              onChanged: (value) {
-                                setState(() {
-                                  _emailController.text = value;
-                                });
-                                if (value.isNullOrEmpty) 'Email is required.';
-                                if (!value.isValidEmail)
-                                  'Enter a valid email address.';
-                              },
+                              // onChanged: (value) {
+                              //   setState(() {
+                              //     _emailController.text = value;
+                              //   });
+                              //   if (value.isNullOrEmpty) 'Email is required.';
+                              //   if (!value.isValidEmail)
+                              //     'Enter a valid email address.';
+                              // },
                               validator: (value) {
                                 if (value.isNullOrEmpty)
                                   return 'Email is required.';
@@ -138,7 +141,7 @@ class _LoginPageState extends State<LoginPage> {
                                     fontSize: 18, fontWeight: FontWeight.bold)),
                             TextFormField(
                               controller: _passwordController,
-                              obscureText: true,
+                              obscureText: _obscurePassword,
                               textInputAction: TextInputAction.next,
                               decoration: InputDecoration(
                                 fillColor: Colors.blueGrey.shade50,
@@ -155,17 +158,29 @@ class _LoginPageState extends State<LoginPage> {
                                 ),
                                 border: InputBorder.none,
                                 hintText: 'Password',
-                                suffixIcon: const Icon(Icons.lock_outline,
-                                    size: 15, color: Colors.black),
+                                suffixIcon: InkWell(
+                                  onTap: () {
+                                    setState(() {
+                                      _obscurePassword = !_obscurePassword;
+                                    });
+                                  },
+                                  child: Icon(
+                                    _obscurePassword == true
+                                        ? Icons.lock_outline
+                                        : Icons.remove_red_eye,
+                                    size: 15,
+                                    color: Colors.black,
+                                  ),
+                                ),
                               ),
-                              onChanged: (value) {
-                                setState(() {
-                                  _passwordController.text = value;
-                                });
-                                if (value.isNullOrEmpty)
-                                  'Password is required.';
-                                return null;
-                              },
+                              // onChanged: (value) {
+                              //   setState(() {
+                              //     _passwordController.text = value;
+                              //   });
+                              //   if (value.isNullOrEmpty)
+                              //     'Password is required.';
+
+                              // },
                               validator: (value) {
                                 if (value.isNullOrEmpty)
                                   return 'Password is required.';
@@ -229,30 +244,32 @@ class _LoginPageState extends State<LoginPage> {
 
                             Center(
                               child: RichText(
-                                  text: TextSpan(
-                                text: 'Don\'t have an account? ',
-                                style: TextStyle(color: Colors.black),
-                                children: [
-                                  TextSpan(
-                                    text: 'Sign up',
-                                    style: TextStyle(
-                                        fontSize: 14,
-                                        color: Colors.blue.shade400,
-                                        fontWeight: FontWeight.w500),
-                                    // Add navigation to the sign-up screen.
-                                    recognizer: TapGestureRecognizer()
-                                      ..onTap = ()
-                                          // Navigate to the login screen.
-                                          =>
-                                          Navigator.of(context).push(
-                                            MaterialPageRoute(
-                                                builder: (_) =>
-                                                    AdminRegistrationPage()),
-                                          ),
-                                  ),
-                                ],
-                              )),
+                                text: TextSpan(
+                                  text: 'Don\'t have an account? ',
+                                  style: TextStyle(color: Colors.black),
+                                  children: [
+                                    TextSpan(
+                                      text: 'Sign up',
+                                      style: TextStyle(
+                                          fontSize: 14,
+                                          color: Colors.blue.shade400,
+                                          fontWeight: FontWeight.w500),
+                                      // Add navigation to the sign-up screen.
+                                      recognizer: TapGestureRecognizer()
+                                        ..onTap = ()
+                                            // Navigate to the login screen.
+                                            =>
+                                            Navigator.of(context).push(
+                                              MaterialPageRoute(
+                                                  builder: (_) =>
+                                                      AdminRegistrationPage()),
+                                            ),
+                                    ),
+                                  ],
+                                ),
+                              ),
                             ),
+                            SizedBox(height: 12),
                           ],
                         ),
                       ),
