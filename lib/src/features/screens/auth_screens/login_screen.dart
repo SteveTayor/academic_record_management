@@ -3,6 +3,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../core/service/firebase_services.dart';
+import '../dashborad/dashboard.dart';
 import 'validation.dart'; // Adjust path accordingly
 
 class LoginPage extends StatefulWidget {
@@ -19,7 +20,7 @@ class _LoginPageState extends State<LoginPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _smsCodeController = TextEditingController();
-
+  final _resetEmailController = TextEditingController();
   // Instance of our AuthService.
   final AuthService _authService = AuthService();
 
@@ -31,6 +32,125 @@ class _LoginPageState extends State<LoginPage> {
   String _message = '';
 
   var _obscurePassword = true;
+
+  bool _isLoading = false;
+
+  Future<void> _showForgotPasswordDialog() async {
+    String dialogMessage = '';
+    bool isLoading = false;
+
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text('Reset Password'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    'Enter your email address and we\'ll send you a link to reset your password.',
+                    style: TextStyle(fontSize: 14),
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _resetEmailController,
+                    decoration: InputDecoration(
+                      labelText: 'Email',
+                      fillColor: Colors.blueGrey.shade50,
+                      filled: true,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(15),
+                      ),
+                      prefixIcon: const Icon(Icons.email_outlined),
+                    ),
+                    keyboardType: TextInputType.emailAddress,
+                  ),
+                  if (dialogMessage.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8.0),
+                      child: Text(
+                        dialogMessage,
+                        style: TextStyle(
+                          color: dialogMessage.contains('sent')
+                              ? Colors.green
+                              : Colors.red,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    _resetEmailController.clear();
+                  },
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: isLoading
+                      ? null
+                      : () async {
+                          if (_resetEmailController.text.trim().isEmpty) {
+                            setState(() {
+                              dialogMessage = 'Please enter your email address';
+                            });
+                            return;
+                          }
+
+                          setState(() {
+                            isLoading = true;
+                            dialogMessage = '';
+                          });
+
+                          try {
+                            await FirebaseAuth.instance.sendPasswordResetEmail(
+                              email: _resetEmailController.text.trim(),
+                            );
+                            setState(() {
+                              dialogMessage =
+                                  'Password reset link sent! Check your email.';
+                            });
+                            await Future.delayed(const Duration(seconds: 2));
+                            if (context.mounted) {
+                              Navigator.of(context).pop();
+                            }
+                            _resetEmailController.clear();
+                          } catch (e) {
+                            setState(() {
+                              dialogMessage = 'Error: ${e.toString()}';
+                            });
+                          } finally {
+                            setState(() {
+                              isLoading = false;
+                            });
+                          }
+                        },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue.shade800,
+                  ),
+                  child: isLoading
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            valueColor:
+                                AlwaysStoppedAnimation<Color>(Colors.white),
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : const Text('Send Reset Link'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -134,7 +254,12 @@ class _LoginPageState extends State<LoginPage> {
                                 if (!value.isValidEmail)
                                   return 'Enter a valid email address.';
                                 return null;
-                              },
+                              }, // ElevatedButton(
+                              //   onPressed: () {
+                              //     // Navigate to your admin dashboard or anywhere else.
+                              //   },
+                              //   child: const Text('Go to Dashboard'),
+                              // ),
                             ),
                             const Text('Password',
                                 style: TextStyle(
@@ -188,7 +313,19 @@ class _LoginPageState extends State<LoginPage> {
                                 return null;
                               },
                             ),
-
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: TextButton(
+                                onPressed: _showForgotPasswordDialog,
+                                child: Text(
+                                  'Forgot Password?',
+                                  style: TextStyle(
+                                    color: Colors.blue.shade800,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            ),
                             // Continue button (disabled if MFA is triggered).
 
                             Padding(
@@ -236,10 +373,45 @@ class _LoginPageState extends State<LoginPage> {
                                   return null;
                                 },
                               ),
-                              ElevatedButton(
-                                onPressed: _finalizeMfaSignIn,
-                                child: const Text('Verify SMS Code'),
+                              Padding(
+                                padding: const EdgeInsets.only(top: .0),
+                                child: Container(
+                                  width: double.infinity,
+                                  decoration: BoxDecoration(
+                                    backgroundBlendMode: BlendMode.darken,
+                                    borderRadius: BorderRadius.circular(15),
+                                    color: Colors.blue.shade800,
+                                  ),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(8.0),
+                                    child: _isLoading
+                                        ? const Center(
+                                            child: CircularProgressIndicator(
+                                              valueColor:
+                                                  AlwaysStoppedAnimation<Color>(
+                                                      Colors.white),
+                                            ),
+                                          )
+                                        : InkWell(
+                                            onTap: _finalizeMfaSignIn,
+                                            child: const Text('Verify SMS Code',
+                                                textAlign: TextAlign.center,
+                                                style: TextStyle(
+                                                    fontSize: 18,
+                                                    color: Colors.white)),
+                                          ), // ElevatedButton(
+                                    //   onPressed: () {
+                                    //     // Navigate to your admin dashboard or anywhere else.
+                                    //   },
+                                    //   child: const Text('Go to Dashboard'),
+                                    // ),
+                                  ),
+                                ),
                               ),
+                              // ElevatedButton(
+                              //   onPressed: _finalizeMfaSignIn,
+                              //   child: const Text('Verify SMS Code'),
+                              // ),
                             ],
 
                             Center(
@@ -249,7 +421,12 @@ class _LoginPageState extends State<LoginPage> {
                                   style: TextStyle(color: Colors.black),
                                   children: [
                                     TextSpan(
-                                      text: 'Sign up',
+                                      text: 'Sign up', // ElevatedButton(
+                                      //   onPressed: () {
+                                      //     // Navigate to your admin dashboard or anywhere else.
+                                      //   },
+                                      //   child: const Text('Go to Dashboard'),
+                                      // ),
                                       style: TextStyle(
                                           fontSize: 14,
                                           color: Colors.blue.shade400,
@@ -279,7 +456,7 @@ class _LoginPageState extends State<LoginPage> {
                     // Display status or error messages.
                     Text(
                       _message,
-                      style: TextStyle(color: Colors.red),
+                      style: TextStyle(color: Colors.teal),
                     ),
                   ],
                 ),
@@ -296,6 +473,7 @@ class _LoginPageState extends State<LoginPage> {
     if (!_formKey.currentState!.validate()) return;
     setState(() {
       _message = '';
+      _isLoading = true;
     });
     try {
       // Attempt to sign in normally.
@@ -306,6 +484,7 @@ class _LoginPageState extends State<LoginPage> {
       setState(() {
         _message = 'Login successful!';
       });
+       _navigateToDashboard();
     } on FirebaseAuthMultiFactorException catch (e) {
       // MFA is required. Save the resolver and start phone verification.
       setState(() {
@@ -316,6 +495,10 @@ class _LoginPageState extends State<LoginPage> {
     } catch (e) {
       setState(() {
         _message = 'Login failed: $e';
+      });
+    } finally {
+      setState(() {
+        _isLoading = false;
       });
     }
   }
@@ -374,6 +557,7 @@ class _LoginPageState extends State<LoginPage> {
     if (smsCode.isEmpty) {
       setState(() {
         _message = 'Please enter the SMS code.';
+        _isLoading = true;
       });
       return;
     }
@@ -392,5 +576,14 @@ class _LoginPageState extends State<LoginPage> {
         _message = 'Failed to finalize MFA sign-in: $e';
       });
     }
+  }
+
+  void _navigateToDashboard() {
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (_) =>
+            const DashboardPage(), // Replace with your dashboard screen
+      ),
+    );
   }
 }

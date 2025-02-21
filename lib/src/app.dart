@@ -3,6 +3,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'features/screens/auth_screens/admin_signup.dart';
+import 'features/screens/auth_screens/login_screen.dart';
 import 'sample_feature/sample_item_details_view.dart';
 import 'sample_feature/sample_item_list_view.dart';
 import 'settings/settings_controller.dart';
@@ -61,7 +62,7 @@ class MyApp extends StatelessWidget {
           darkTheme: ThemeData.dark(),
           themeMode: settingsController.themeMode,
 
-          home: const AdminRegistrationPage(),
+          home: const LoginPage(),
           // Define a function to handle named routes in order to support
           // Flutter web url navigation and deep linking.
           // onGenerateRoute: (RouteSettings routeSettings) {

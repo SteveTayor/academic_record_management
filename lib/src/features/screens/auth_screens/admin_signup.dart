@@ -451,7 +451,6 @@ class _AdminRegistrationPageState extends State<AdminRegistrationPage> {
       mainAxisSize: MainAxisSize.min,
       spacing: 25,
       children: [
-        const SizedBox(height: 20),
         const Text(
           'A verification link has been sent to your email. Please verify.',
           textAlign: TextAlign.center,
@@ -487,7 +486,7 @@ class _AdminRegistrationPageState extends State<AdminRegistrationPage> {
                 ),
                 SizedBox(width:30,),
                 Container(
-                  width:100,
+                  width:150,
               decoration: BoxDecoration(
                 backgroundBlendMode: BlendMode.darken,
                 borderRadius: BorderRadius.circular(15),
