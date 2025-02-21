@@ -46,7 +46,7 @@ class MyApp extends StatelessWidget {
           supportedLocales: const [
             Locale('en', ''), // English, no country code
           ],
-
+          debugShowCheckedModeBanner: false,
           // Use AppLocalizations to configure the correct application title
           // depending on the user's locale.
           //

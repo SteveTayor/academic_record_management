@@ -39,7 +39,7 @@ class _AdminRegistrationPageState extends State<AdminRegistrationPage> {
   bool _obscureConfirmPassword = true;
 
   bool _obscurePassword = true;
-  
+
   bool _isSignUpLoading = false;
   bool _isResendEmailLoading = false;
   bool _isLoading = false;
@@ -62,28 +62,41 @@ class _AdminRegistrationPageState extends State<AdminRegistrationPage> {
                     color: Colors.blueGrey.shade50,
                     borderRadius: BorderRadius.circular(15),
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  child: Row(
                     children: [
-                      CircleAvatar(
-                        backgroundColor: Colors.lightBlue.withOpacity(.2),
-                        child: Icon(Icons.safety_check_sharp,
-                            size: 25, color: Colors.blue.shade600),
-                      ),
-                      const Text(
-                        'UniVault Admin Registration',
-                        style: TextStyle(
-                            fontSize: 28, fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Secure registration for approved administrators',
-                        style: TextStyle(
-                          fontSize: 18,
-                          color: Colors.blueGrey.shade300,
-                          fontWeight: FontWeight.w500,
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          spacing:8,
+                          children: [
+                            CircleAvatar(
+                              backgroundColor: Colors.lightBlue.withOpacity(.2),
+                              child: Icon(Icons.safety_check_sharp,
+                                  size: 25, color: Colors.blue.shade600),
+                            ),
+                            const Text(
+                              'UniVault Admin Registration',
+                              style: TextStyle(
+                                  fontSize: 28, fontWeight: FontWeight.bold),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Secure registration for approved administrators',
+                              style: TextStyle(
+                                fontSize: 18,
+                                color: Colors.blueGrey.shade300,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
+                      Image.asset(
+                        'assets/images/university-of-ibadan-logo-transparent.png',
+                        height: 80,
+                        width: 100,
+                        fit: BoxFit.fitHeight,
+                      )
                     ],
                   ),
                 ),
@@ -372,20 +385,20 @@ class _AdminRegistrationPageState extends State<AdminRegistrationPage> {
                 },
               ),
               const Text('Verify by Email'),
-              const SizedBox(width: 20),
-              Radio<VerificationMethod>(
-                value: VerificationMethod.phone,
-                groupValue: _verificationMethod,
-                onChanged: (val) {
-                  setState(() => _verificationMethod = val!);
-                },
-              ),
-              const Text('Verify by Phone (SMS)'),
+              // const SizedBox(width: 20),
+              // Radio<VerificationMethod>(
+              //   value: VerificationMethod.phone,
+              //   groupValue: _verificationMethod,
+              //   onChanged: (val) {
+              //     setState(() => _verificationMethod = val!);
+              //   },
+              // ),
+              // const Text('Verify by Phone (SMS)'),
             ],
           ),
 
           Padding(
-            padding: const EdgeInsets.only(top: .0),
+            padding: const EdgeInsets.only(top: 15.0),
             child: Container(
               width: double.infinity,
               decoration: BoxDecoration(
@@ -403,11 +416,12 @@ class _AdminRegistrationPageState extends State<AdminRegistrationPage> {
                         ),
                       )
                     : InkWell(
-                  onTap: _handleSignUp,
-                  child: const Text('Sign Up',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 18, color: Colors.white)),
-                ),
+                        onTap: _handleSignUp,
+                        child: const Text('Sign Up',
+                            textAlign: TextAlign.center,
+                            style:
+                                TextStyle(fontSize: 18, color: Colors.white)),
+                      ),
               ),
             ),
           ),
@@ -460,14 +474,15 @@ class _AdminRegistrationPageState extends State<AdminRegistrationPage> {
           children: [
             Container(
               width: 150,
-                  decoration: BoxDecoration(
-                    backgroundBlendMode: BlendMode.darken,
-                    borderRadius: BorderRadius.circular(15),
-                    color: Colors.blue.shade800,
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 15.0, vertical: 10),
-                    child: _isLoading
+              decoration: BoxDecoration(
+                backgroundBlendMode: BlendMode.darken,
+                borderRadius: BorderRadius.circular(15),
+                color: Colors.blue.shade800,
+              ),
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 15.0, vertical: 10),
+                child: _isLoading
                     ? const Center(
                         child: CircularProgressIndicator(
                           valueColor:
@@ -475,25 +490,29 @@ class _AdminRegistrationPageState extends State<AdminRegistrationPage> {
                         ),
                       )
                     : InkWell(
-                      onTap: _checkEmailVerificationStatus,
-                      child: Flexible(
-                        child: const Text('I have verified, continue',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(fontSize: 18, color: Colors.white)),
+                        onTap: _checkEmailVerificationStatus,
+                        child: Flexible(
+                          child: const Text('I have verified, continue',
+                              textAlign: TextAlign.center,
+                              style:
+                                  TextStyle(fontSize: 18, color: Colors.white)),
+                        ),
                       ),
-                    ),
-                  ),
-                ),
-                SizedBox(width:30,),
-                Container(
-                  width:150,
+              ),
+            ),
+            SizedBox(
+              width: 30,
+            ),
+            Container(
+              width: 150,
               decoration: BoxDecoration(
                 backgroundBlendMode: BlendMode.darken,
                 borderRadius: BorderRadius.circular(15),
                 color: Colors.blue.shade800,
               ),
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 15.0, vertical: 10),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 15.0, vertical: 10),
                 child: _isResendEmailLoading
                     ? const Center(
                         child: CircularProgressIndicator(
@@ -501,20 +520,20 @@ class _AdminRegistrationPageState extends State<AdminRegistrationPage> {
                               AlwaysStoppedAnimation<Color>(Colors.white),
                         ),
                       )
-                    :InkWell(
-                  onTap: _resendEmailVerification,
-                  child: Flexible(
-                    child: const Text('Resend Verification Email',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 18, color: Colors.white)),
-                  ),
-                ),
+                    : InkWell(
+                        onTap: _resendEmailVerification,
+                        child: Flexible(
+                          child: const Text('Resend Verification Email',
+                              textAlign: TextAlign.center,
+                              style:
+                                  TextStyle(fontSize: 18, color: Colors.white)),
+                        ),
+                      ),
               ),
             ),
-          
           ],
         ),
-        
+
         // ElevatedButton(
         //   onPressed: _checkEmailVerificationStatus,
         //   child: const Text('I have verified, continue'),
@@ -600,11 +619,9 @@ class _AdminRegistrationPageState extends State<AdminRegistrationPage> {
     final pass = _passwordController.text;
 
     setState(() {
-
-     _message = '';
-     _isSignUpLoading=true;
-    }
-    );
+      _message = '';
+      _isSignUpLoading = true;
+    });
 
     try {
       if (_verificationMethod == VerificationMethod.email) {
@@ -647,15 +664,14 @@ class _AdminRegistrationPageState extends State<AdminRegistrationPage> {
       }
     } catch (e) {
       setState(() => _message = 'Sign-up failed: $e');
-    }
-    finally {
+    } finally {
       setState(() {
         _isSignUpLoading = false;
       });
     }
   }
 
-Future<void> _checkEmailVerificationStatus() async {
+  Future<void> _checkEmailVerificationStatus() async {
     setState(() {
       _isLoading = true;
       _message = '';
@@ -666,7 +682,10 @@ Future<void> _checkEmailVerificationStatus() async {
         final user = FirebaseAuth.instance.currentUser;
         if (user != null) {
           // Save admin details to Firestore only after email is verified.
-          await FirebaseFirestore.instance.collection('admins').doc(user.uid).set({
+          await FirebaseFirestore.instance
+              .collection('admins')
+              .doc(user.uid)
+              .set({
             'fullName': _fullNameController.text.trim(),
             'email': _emailController.text.trim(),
             'phone': _phoneController.text.trim(),
@@ -695,7 +714,7 @@ Future<void> _checkEmailVerificationStatus() async {
     }
   }
 
-Future<void> _resendEmailVerification() async {
+  Future<void> _resendEmailVerification() async {
     setState(() {
       _isResendEmailLoading = true;
       _message = '';
@@ -720,7 +739,7 @@ Future<void> _resendEmailVerification() async {
     setState(() {
       // _isSignUpLoading = true;
       _message = '';
-    } );
+    });
     if (_verificationId == null) {
       setState(() => _message = 'No verificationId. Try again.');
       return;

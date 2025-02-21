@@ -173,6 +173,7 @@ class _LoginPageState extends State<LoginPage> {
                 child: Column(
                   spacing: 15,
                   children: [
+                    SizedBox(height: 20),
                     Container(
                       decoration: BoxDecoration(
                         color: Colors.blueGrey.shade50,
@@ -181,28 +182,42 @@ class _LoginPageState extends State<LoginPage> {
                       child: Padding(
                         padding: const EdgeInsets.symmetric(
                             horizontal: 15, vertical: 20),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          spacing: 8,
+                        child: Row(
                           children: [
-                            CircleAvatar(
-                              backgroundColor: Colors.lightBlue.withOpacity(.2),
-                              child: Icon(Icons.lock_outline_rounded,
-                                  size: 25, color: Colors.blue.shade600),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                spacing: 8,
+                                children: [
+                                  CircleAvatar(
+                                    backgroundColor:
+                                        Colors.lightBlue.withOpacity(.2),
+                                    child: Icon(Icons.lock_outline_rounded,
+                                        size: 25, color: Colors.blue.shade600),
+                                  ),
+                                  const Text(
+                                    'Welcome back',
+                                    style: TextStyle(
+                                        fontSize: 28,
+                                        fontWeight: FontWeight.bold),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Enter your credentials to access your account.',
+                                    style: TextStyle(
+                                        fontSize: 18,
+                                        color: Colors.blueGrey.shade300,
+                                        fontWeight: FontWeight.w500),
+                                  ),
+                                ],
+                              ),
                             ),
-                            const Text(
-                              'Welcome back',
-                              style: TextStyle(
-                                  fontSize: 28, fontWeight: FontWeight.bold),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Enter your credentials to access your account.',
-                              style: TextStyle(
-                                  fontSize: 18,
-                                  color: Colors.blueGrey.shade300,
-                                  fontWeight: FontWeight.w500),
-                            ),
+                            Image.asset(
+                              'assets/images/university-of-ibadan-logo-transparent.png',
+                              height: 80,
+                              width: 100,
+                              fit: BoxFit.contain,
+                            )
                           ],
                         ),
                       ),
@@ -219,9 +234,14 @@ class _LoginPageState extends State<LoginPage> {
                             horizontal: 25, vertical: 15),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
-                          spacing: 15,
+                          spacing: 8,
                           children: [
-                            const SizedBox(height: 12),
+                            const SizedBox(height: 22),
+                            const Text('Login',
+                                style: TextStyle(
+                                    fontSize: 25, fontWeight: FontWeight.bold)),
+                            Divider(),
+                            const SizedBox(height: 22),
                             const Text('Email',
                                 style: TextStyle(
                                     fontSize: 18, fontWeight: FontWeight.bold)),
@@ -462,7 +482,7 @@ class _LoginPageState extends State<LoginPage> {
                     // Display status or error messages.
                     Text(
                       _message,
-                      style: TextStyle(color: Colors.teal),
+                      style: TextStyle(color: Colors.red),
                     ),
                   ],
                 ),
