@@ -40,6 +40,8 @@ class _AdminRegistrationPageState extends State<AdminRegistrationPage> {
 
   bool _obscurePassword = true;
   
+  bool _isSignUpLoading = false;
+  bool _isResendEmailLoading = false;
   bool _isLoading = false;
 
   @override
@@ -393,7 +395,7 @@ class _AdminRegistrationPageState extends State<AdminRegistrationPage> {
               ),
               child: Padding(
                 padding: const EdgeInsets.all(8.0),
-                child: _isLoading
+                child: _isSignUpLoading
                     ? const Center(
                         child: CircularProgressIndicator(
                           valueColor:
@@ -447,7 +449,9 @@ class _AdminRegistrationPageState extends State<AdminRegistrationPage> {
   Widget _buildEmailVerificationWait() {
     return Column(
       mainAxisSize: MainAxisSize.min,
+      spacing: 25,
       children: [
+        const SizedBox(height: 20),
         const Text(
           'A verification link has been sent to your email. Please verify.',
           textAlign: TextAlign.center,
@@ -456,13 +460,14 @@ class _AdminRegistrationPageState extends State<AdminRegistrationPage> {
         Row(
           children: [
             Container(
+              width: 150,
                   decoration: BoxDecoration(
                     backgroundBlendMode: BlendMode.darken,
                     borderRadius: BorderRadius.circular(15),
                     color: Colors.blue.shade800,
                   ),
                   child: Padding(
-                    padding: const EdgeInsets.all(8.0),
+                    padding: const EdgeInsets.symmetric(horizontal: 15.0, vertical: 10),
                     child: _isLoading
                     ? const Center(
                         child: CircularProgressIndicator(
@@ -472,20 +477,25 @@ class _AdminRegistrationPageState extends State<AdminRegistrationPage> {
                       )
                     : InkWell(
                       onTap: _checkEmailVerificationStatus,
-                      child: const Text('I have verified, continue',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(fontSize: 18, color: Colors.white)),
+                      child: Flexible(
+                        child: const Text('I have verified, continue',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(fontSize: 18, color: Colors.white)),
+                      ),
                     ),
                   ),
-                ),Container(
+                ),
+                SizedBox(width:30,),
+                Container(
+                  width:100,
               decoration: BoxDecoration(
                 backgroundBlendMode: BlendMode.darken,
                 borderRadius: BorderRadius.circular(15),
                 color: Colors.blue.shade800,
               ),
               child: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: _isLoading
+                padding: const EdgeInsets.symmetric(horizontal: 15.0, vertical: 10),
+                child: _isResendEmailLoading
                     ? const Center(
                         child: CircularProgressIndicator(
                           valueColor:
@@ -494,9 +504,11 @@ class _AdminRegistrationPageState extends State<AdminRegistrationPage> {
                       )
                     :InkWell(
                   onTap: _resendEmailVerification,
-                  child: const Text('Resend Verification Email',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 18, color: Colors.white)),
+                  child: Flexible(
+                    child: const Text('Resend Verification Email',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 18, color: Colors.white)),
+                  ),
                 ),
               ),
             ),
@@ -591,7 +603,7 @@ class _AdminRegistrationPageState extends State<AdminRegistrationPage> {
     setState(() {
 
      _message = '';
-     _isLoading=true;
+     _isSignUpLoading=true;
     }
     );
 
@@ -637,18 +649,32 @@ class _AdminRegistrationPageState extends State<AdminRegistrationPage> {
     } catch (e) {
       setState(() => _message = 'Sign-up failed: $e');
     }
+    finally {
+      setState(() {
+        _isSignUpLoading = false;
+      });
+    }
   }
 
-  Future<void> _checkEmailVerificationStatus() async {
+Future<void> _checkEmailVerificationStatus() async {
+    setState(() {
+      _isLoading = true;
+      _message = '';
+    });
     try {
       bool isVerified = await _authService.checkEmailVerification();
       if (isVerified) {
         final user = FirebaseAuth.instance.currentUser;
         if (user != null) {
-          await FirebaseFirestore.instance
-              .collection('admins')
-              .doc(user.uid)
-              .update({'emailVerified': true});
+          // Save admin details to Firestore only after email is verified.
+          await FirebaseFirestore.instance.collection('admins').doc(user.uid).set({
+            'fullName': _fullNameController.text.trim(),
+            'email': _emailController.text.trim(),
+            'phone': _phoneController.text.trim(),
+            'createdAt': DateTime.now(),
+            'emailVerified': true,
+            'phoneVerified': false,
+          });
         }
         setState(() {
           _isVerified = true;
@@ -660,21 +686,42 @@ class _AdminRegistrationPageState extends State<AdminRegistrationPage> {
         });
       }
     } catch (e) {
-      setState(() => _message = 'Error checking verification: $e');
+      setState(() {
+        _message = 'Error checking verification: $e';
+      });
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 
-  Future<void> _resendEmailVerification() async {
+Future<void> _resendEmailVerification() async {
+    setState(() {
+      _isResendEmailLoading = true;
+      _message = '';
+    });
     try {
       await _authService.resendVerificationEmail();
-      setState(() => _message = 'Verification email resent. Check your inbox.');
+      setState(() {
+        _message = 'Verification email resent. Check your inbox.';
+      });
     } catch (e) {
-      setState(() => _message = 'Failed to resend email: $e');
+      setState(() {
+        _message = 'Failed to resend email: $e';
+      });
+    } finally {
+      setState(() {
+        _isResendEmailLoading = false;
+      });
     }
   }
 
   Future<void> _handlePhoneVerificationCode() async {
-    setState(() => _message = '');
+    setState(() {
+      // _isSignUpLoading = true;
+      _message = '';
+    } );
     if (_verificationId == null) {
       setState(() => _message = 'No verificationId. Try again.');
       return;
