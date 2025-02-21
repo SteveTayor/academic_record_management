@@ -142,7 +142,13 @@ class _LoginPageState extends State<LoginPage> {
                             strokeWidth: 2,
                           ),
                         )
-                      : const Text('Send Reset Link'),
+                      : const Text(
+                          'Send Reset Link',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.white,
+                          ),
+                        ),
                 ),
               ],
             );
@@ -484,7 +490,7 @@ class _LoginPageState extends State<LoginPage> {
       setState(() {
         _message = 'Login successful!';
       });
-       _navigateToDashboard();
+      _navigateToDashboard();
     } on FirebaseAuthMultiFactorException catch (e) {
       // MFA is required. Save the resolver and start phone verification.
       setState(() {

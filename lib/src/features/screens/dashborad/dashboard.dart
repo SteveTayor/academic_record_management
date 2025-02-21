@@ -84,7 +84,7 @@ class _DashboardPageState extends State<DashboardPage> {
         child: Column(
           children: [
             Text(
-              'SecureAuth',
+              'UniVault',
               style: TextStyle(
                 color: Colors.white,
                 fontSize: 24,
