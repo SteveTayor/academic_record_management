@@ -59,16 +59,20 @@ class _DashboardPageState extends State<DashboardPage> {
             child: _buildSideNav(),
           ),
           // 2) Main Content
-          Expanded(
-            child: SingleChildScrollView(
-              child: Column(
-                children: [
-                  _buildTopBar(context),
-                  const SizedBox(height: 16),
-                  _buildSystemOverview(context),
-                  const SizedBox(height: 16),
-                  _buildRecentActivity(context),
-                ],
+          SizedBox(
+            width: MediaQuery.of(context).size.width - 250,
+            child: Expanded(
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  children: [
+                    _buildTopBar(context),
+                    const SizedBox(height: 16),
+                    _buildSystemOverview(context),
+                    const SizedBox(height: 16),
+                    _buildRecentActivity(context),
+                  ],
+                ),
               ),
             ),
           ),
@@ -82,13 +86,17 @@ class _DashboardPageState extends State<DashboardPage> {
       child: Padding(
         padding: const EdgeInsets.only(top: 20.0),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'UniVault',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Text(
+                'UniVault',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
             const SizedBox(height: 30),
@@ -163,7 +171,7 @@ class _DashboardPageState extends State<DashboardPage> {
     return Container(
       color: Colors.white,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      alignment: Alignment.centerLeft,
+      alignment: Alignment.topCenter,
       child: Row(
         children: [
           const Text(
@@ -270,7 +278,7 @@ class _DashboardPageState extends State<DashboardPage> {
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.deepPurple.shade700,
             ),
-            child: Text(buttonText),
+            child: Text(buttonText, style: const TextStyle(color: Colors.white)),
           ),
         ],
       ),
