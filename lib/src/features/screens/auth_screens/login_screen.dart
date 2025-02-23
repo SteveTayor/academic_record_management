@@ -1,4 +1,5 @@
 import 'package:archival_system/src/features/screens/auth_screens/admin_signup.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -418,6 +419,12 @@ class _LoginPageState extends State<LoginPage> {
         _passwordController.text.trim(),
       );
       if (user != null) {
+        // Reset OTP verification status
+      await FirebaseFirestore.instance
+          .collection('admins')
+          .doc(user.uid)
+          .update({'otpVerified': false});
+
         final otp = _authService.generateOtp();
         await _authService.storeOtp(user.uid, otp);
         await _authService.sendOtpEmail(user.email!, otp);

@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 import '../../../core/service/firebase_services.dart';
@@ -141,6 +142,7 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
       if (user != null) {
         final isValid = await _authService.verifyOtp(user.uid, enteredOtp);
         if (isValid) {
+          
           await _authService.markOtpVerified(user.uid);
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(
@@ -166,6 +168,11 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
+        // Reset OTP verification status
+      await FirebaseFirestore.instance
+          .collection('admins')
+          .doc(user.uid)
+          .update({'otpVerified': false});
         final otp = _authService.generateOtp();
         await _authService.storeOtp(user.uid, otp);
         await _authService.sendOtpEmail(user.email!, otp);

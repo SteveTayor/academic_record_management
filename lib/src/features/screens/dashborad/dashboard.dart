@@ -1,3 +1,4 @@
+import 'package:archival_system/src/features/screens/other_screens/ocr_screen.dart';
 import 'package:flutter/material.dart';
 import '../../widgets/dashboard_card.dart'; 
 class DashboardPage extends StatefulWidget {
@@ -175,9 +176,10 @@ class _DashboardPageState extends State<DashboardPage> {
     return ElevatedButton(
       onPressed: () {
         // Placeholder for upload action
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Upload New Document clicked')),
-        );
+        // ScaffoldMessenger.of(context).showSnackBar(
+        //   const SnackBar(content: Text('Upload New Document clicked')),
+        // );
+        Navigator.push(context, MaterialPageRoute(builder: (context) => OcrUploadScreen()));
       },
       style: ElevatedButton.styleFrom(
         backgroundColor: blue,

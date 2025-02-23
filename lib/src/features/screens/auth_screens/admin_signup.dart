@@ -781,7 +781,7 @@ class _AdminRegistrationPageState extends State<AdminRegistrationPage> {
               .doc(user.uid)
               .update({'emailVerified': true});
           final otp = _authService.generateOtp();
-          await _authService.storeOtp(user.uid, otp);
+          // await _authService.storeOtp(user.uid, otp);
           await _authService.sendOtpEmail(user.email!, otp);
           setState(() {
             _currentStep = RegistrationStep.otpVerification;
@@ -891,6 +891,12 @@ class _AdminRegistrationPageState extends State<AdminRegistrationPage> {
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
+        // Reset OTP verification status
+      await FirebaseFirestore.instance
+          .collection('admins')
+          .doc(user.uid)
+          .update({'otpVerified': false});
+          
         final otp = _authService.generateOtp();
         await _authService.storeOtp(user.uid, otp);
         await _authService.sendOtpEmail(user.email!, otp);
