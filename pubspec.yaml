@@ -11,11 +11,13 @@ environment:
 
 dependencies:
   cloud_firestore: ^5.6.4
+  file_picker: ^9.0.0
   firebase_core: ^3.8.1
   flutter:
     sdk: flutter
   flutter_localizations:
     sdk: flutter
+  provider: ^6.1.2
   timeago: ^3.7.0
 
 dev_dependencies:

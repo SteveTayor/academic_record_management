@@ -1,10 +1,5 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:timeago/timeago.dart' as timeago;
-import '../../../core/service/document_service.dart';
-import '../../widgets/dashboard_card.dart';
-
+import '../../widgets/dashboard_card.dart'; 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
 
@@ -13,7 +8,11 @@ class DashboardPage extends StatefulWidget {
 }
 
 class _DashboardPageState extends State<DashboardPage> {
-  final DocumentService _documentService = DocumentService();
+  // Color constants
+  static const Color lightPurple = Color(0xFFE6E6FA);
+  static const Color white = Colors.white;
+  static const Color blue = Colors.blue;
+  static const Color black = Colors.black;
 
   @override
   Widget build(BuildContext context) {
@@ -21,123 +20,114 @@ class _DashboardPageState extends State<DashboardPage> {
       appBar: AppBar(
         title: const Text('Dashboard Overview'),
         centerTitle: true,
+        backgroundColor: white,
+        foregroundColor: black,
+        elevation: 0,
       ),
-      drawer: _buildDrawer(context),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
+      drawer: _buildDrawer(),
+      backgroundColor: white,
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildDashboardMetrics(),
+              const SizedBox(height: 24),
+              Center(child: _buildQuickActions()),
+              const SizedBox(height: 24),
+              _buildRecentDocumentAccess(),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Sidebar navigation menu
+  Widget _buildDrawer() {
+    return Drawer(
+      child: Container(
+        color: lightPurple,
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Dashboard Metrics
-            StreamBuilder(
-              stream: _documentService.getDashboardStats(),
-              builder: (context, snapshot) {
-                if (snapshot.hasError) {
-                  return Text('Error: ${snapshot.error}');
-                }
-                if (!snapshot.hasData) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                final data = snapshot.data!.data() as Map<String, dynamic>;
-                final totalDocuments = data['total_documents'] ?? 0;
-                final weeklyRetrievals = data['weekly_retrievals'] ?? 0;
-
-                return Row(
-                  children: [
-                    Expanded(
-                      child: DashboardCard(
-                        icon: Icons.folder,
-                        title: 'Total Documents',
-                        subtitle: '$totalDocuments files stored',
-                        buttonText: 'View All',
-                        onPressed: () {
-                          // Navigate to documents page (placeholder)
-                        },
-                      ),
+            const Padding(
+              padding: EdgeInsets.fromLTRB(16, 32, 16, 16),
+              child: Row(
+                children: [
+                  Text(
+                    'UniVault',
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: black,
                     ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: DashboardCard(
-                        icon: Icons.refresh,
-                        title: 'Recent Retrievals',
-                        subtitle: '$weeklyRetrievals documents this week',
-                        buttonText: 'See Details',
-                        onPressed: () {
-                          // Show details (placeholder)
-                        },
-                      ),
-                    ),
-                  ],
-                );
-              },
-            ),
-            const SizedBox(height: 24),
-
-            // Quick Actions
-            const Text(
-              'Quick Actions',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            Center(
-              child: ElevatedButton(
-                onPressed: () {
-                  // Upload new document (placeholder)
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue,
-                  foregroundColor: Colors.white,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                ),
-                child: const Text('Upload New Document'),
+                  ),
+                  Spacer(),
+                  Icon(Icons.add, color: black),
+                ],
               ),
             ),
-            const SizedBox(height: 24),
-
-            // Recent Document Access
-            const Text(
-              'Recent Document Access',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ListTile(
+              leading: const Icon(Icons.dashboard, color: black),
+              title: const Text('Dashboard', style: TextStyle(color: black)),
+              selected: true,
+              selectedTileColor: Colors.deepPurple.shade100,
+              onTap: () => Navigator.pop(context),
             ),
-            const SizedBox(height: 8),
-            Expanded(
-              child: StreamBuilder(
-                stream: _documentService.getRecentDocuments(),
-                builder: (context, snapshot) {
-                  if (snapshot.hasError) {
-                    return Text('Error: ${snapshot.error}');
-                  }
-                  if (!snapshot.hasData) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-                  final docs = snapshot.data!.docs;
-
-                  return ListView.builder(
-                    itemCount: docs.length,
-                    itemBuilder: (context, index) {
-                      final doc = docs[index];
-                      final data = doc.data() as Map<String, dynamic>;
-                      final name = data['name'] ?? 'Unknown';
-                      final user = data['last_accessed_by'] ?? 'Unknown';
-                      final action = data['action'] ?? 'Unknown';
-                      final time =
-                          (data['last_accessed'] as Timestamp?)?.toDate() ??
-                              DateTime.now();
-                      final timeAgo = timeago.format(time);
-
-                      return ListTile(
-                        leading: const Icon(Icons.insert_drive_file),
-                        title: Text(name),
-                        subtitle: Text('$user • $action • $timeAgo'),
-                        trailing: const Icon(Icons.more_vert),
-                        onTap: () {
-                          // Handle tap (placeholder)
-                        },
-                      );
-                    },
-                  );
-                },
+            ListTile(
+              leading: const Icon(Icons.folder, color: black),
+              title: const Text('Documents', style: TextStyle(color: black)),
+              onTap: () => Navigator.pop(context), // Placeholder navigation
+            ),
+            ListTile(
+              leading: const Icon(Icons.people, color: black),
+              title: const Text('Users', style: TextStyle(color: black)),
+              onTap: () => Navigator.pop(context), // Placeholder navigation
+            ),
+            // ListTile(
+            //   leading: const Icon(Icons.lock, color: black),
+            //   title: const Text('Access Logs', style: TextStyle(color: black)),
+            //   onTap: () => Navigator.pop(context), // Placeholder navigation
+            // ),
+            // ExpansionTile(
+            //   leading: const Icon(Icons.bar_chart, color: black),
+            //   title: const Text('Reports', style: TextStyle(color: black)),
+            //   children: [
+            //     ListTile(
+            //       title: const Text('Security Report', style: TextStyle(color: black)),
+            //       onTap: () => Navigator.pop(context), // Placeholder navigation
+            //     ),
+            //     ListTile(
+            //       title: const Text('Usage Analytics', style: TextStyle(color: black)),
+            //       onTap: () => Navigator.pop(context), // Placeholder navigation
+            //     ),
+            //   ],
+            // ),
+            const Spacer(),
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Row(
+                children: [
+                  const CircleAvatar(
+                    radius: 20,
+                    child: Icon(Icons.person, size: 24),
+                  ),
+                  const SizedBox(width: 12),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Admin User',
+                        style: TextStyle(fontWeight: FontWeight.bold, color: black),
+                      ),
+                      Text(
+                        'System Administrator',
+                        style: TextStyle(color: Colors.grey.shade700),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
           ],
@@ -146,68 +136,132 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  // Sidebar Drawer
-  Widget _buildDrawer(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
-    return Drawer(
-      child: Column(
-        children: [
-          DrawerHeader(
-            decoration: BoxDecoration(
-              color: Colors.deepPurple.shade100,
-            ),
-            child: Row(
-              children: [
-                const Text(
-                  'UniValut',
-                  style: TextStyle(
-                    color: Colors.black,
-                    fontSize: 24,
-                  ),
-                ),
-                const Spacer(),
-                const Icon(Icons.add, color: Colors.black),
-              ],
-            ),
-          ),
-          ListTile(
-            leading: const Icon(Icons.dashboard),
-            title: const Text('Dashboard'),
-            selected: true,
-            selectedTileColor: Colors.deepPurple.shade50,
-            onTap: () {
-              Navigator.pop(context); // Stay on dashboard
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.folder),
-            title: const Text('Documents'),
-            onTap: () {
-              Navigator.pop(context);
-              // Navigate to documents page (placeholder)
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.people),
-            title: const Text('Users'),
-            onTap: () {
-              Navigator.pop(context);
-              // Navigate to users page (placeholder)
-            },
-          ),
-          const Spacer(),
-          ListTile(
-            leading: CircleAvatar(
-              backgroundImage: user?.photoURL != null
-                  ? NetworkImage(user!.photoURL!)
-                  : null,
-              child: user?.photoURL == null ? const Icon(Icons.person) : null,
-            ),
-            title: Text(user?.displayName ?? 'Admin User'),
-            subtitle: const Text('System Administrator'),
-          ),
-        ],
+  // Dashboard metrics section
+  Widget _buildDashboardMetrics() {
+    return Wrap(
+      spacing: 16,
+      runSpacing: 16,
+      children: const [
+        DashboardCard(
+          icon: Icons.folder,
+          title: 'Total Documents',
+          subtitle: '1,234 files stored',
+          buttonText: 'View All',
+        ),
+        DashboardCard(
+          icon: Icons.refresh,
+          title: 'Recent Retrievals',
+          subtitle: '156 documents this week',
+          buttonText: 'See Details',
+        ),
+        DashboardCard(
+          icon: Icons.security,
+          title: 'Security Alerts',
+          subtitle: '3 suspicious activities',
+          buttonText: 'Review',
+        ),
+        DashboardCard(
+          icon: Icons.analytics,
+          title: 'Access Summary',
+          subtitle: '892 total accesses today',
+          buttonText: 'View Logs',
+        ),
+      ],
+    );
+  }
+
+  // Quick actions section
+  Widget _buildQuickActions() {
+    return ElevatedButton(
+      onPressed: () {
+        // Placeholder for upload action
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Upload New Document clicked')),
+        );
+      },
+      style: ElevatedButton.styleFrom(
+        backgroundColor: blue,
+        foregroundColor: white,
+        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+        textStyle: const TextStyle(fontSize: 16),
       ),
+      child: const Text('Upload New Document'),
+    );
+  }
+
+  // Recent document access table
+  Widget _buildRecentDocumentAccess() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Recent Document Access',
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: black),
+        ),
+        const SizedBox(height: 8),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: DataTable(
+            columnSpacing: 24,
+            columns: const [
+              DataColumn(
+                label: Text('Document', style: TextStyle(fontWeight: FontWeight.bold)),
+              ),
+              DataColumn(
+                label: Text('User', style: TextStyle(fontWeight: FontWeight.bold)),
+              ),
+              DataColumn(
+                label: Text('Action', style: TextStyle(fontWeight: FontWeight.bold)),
+              ),
+              DataColumn(
+                label: Text('Timestamp', style: TextStyle(fontWeight: FontWeight.bold)),
+              ),
+              DataColumn(label: Text('')), // For three-dot menu
+            ],
+            rows: [
+              DataRow(cells: [
+                const DataCell(Text('Research Paper.pdf')),
+                const DataCell(Text('John Doe')),
+                const DataCell(Text('View')),
+                const DataCell(Text('2 minutes ago')),
+                DataCell(IconButton(
+                  icon: const Icon(Icons.more_vert),
+                  onPressed: () {
+                    // Placeholder for menu action
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('More options clicked')),
+                    );
+                  },
+                )),
+              ]),
+              DataRow(cells: [
+                const DataCell(Text('Thesis Draft.docx')),
+                const DataCell(Text('Jane Smith')),
+                const DataCell(Text('Edit')),
+                const DataCell(Text('15 minutes ago')),
+                DataCell(IconButton(
+                  icon: const Icon(Icons.more_vert),
+                  onPressed: () {
+                    // Placeholder for menu action
+                  },
+                )),
+              ]),
+              DataRow(cells: [
+                const DataCell(Text('Lab Results.xlsx')),
+                const DataCell(Text('Mike Johnson')),
+                const DataCell(Text('View')),
+                const DataCell(Text('1 hour ago')),
+                DataCell(IconButton(
+                  icon: const Icon(Icons.more_vert),
+                  onPressed: () {
+                    // Placeholder for menu action
+                  },
+                )),
+              ]),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
