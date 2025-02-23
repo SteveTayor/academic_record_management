@@ -2,7 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:timeago/timeago.dart' as timeago;
-import '../../../core/model/document_model.dart';
+import '../../../core/service/document_service.dart';
 import '../../widgets/dashboard_card.dart';
 
 class DashboardPage extends StatefulWidget {
