@@ -1,6 +1,9 @@
 // lib/services/auth_service.dart
 
 import 'dart:async';
+import 'dart:convert';
+import 'dart:math';
+import 'package:http/http.dart' as http;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -8,46 +11,110 @@ class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  // ---------------------------------------------------------------------------
-  // 1) EMAIL REGISTRATION & VERIFICATION
-  // ---------------------------------------------------------------------------
+  static const String _zeptoMailApiUrl = 'https://api.zeptomail.com/v1.1/email';
+  static const String _apiKey =
+      'Zoho-enczapikey wSsVR61zqxfzXKl/nGasJr8/nFldD1/2EksviVX3unStH63L8Mcyl0bLBFKvH/dLRzJvFzsW8LkrnB5R2mAJj915zVoIDCiF9mqRe1U4J3x17qnvhDzOW2hVkhqLKYINxAtrmmlnEsAi+g==';
+  static const String _fromEmail = 'noreply@joseph-jahazil.name.ng';
 
-  /// Create a user in Firebase Auth, then send them an email verification.
+  // Generate a 6-digit OTP
+  String generateOtp() {
+    final random = Random();
+    return (100000 + random.nextInt(900000)).toString();
+  }
+
+  // Store OTP in Firestore with expiration
+  Future<void> storeOtp(String uid, String otp) async {
+    final expiration = DateTime.now().add(const Duration(minutes: 5));
+    await _firestore.collection('admins').doc(uid).update({
+      'otp': otp,
+      'otpExpiration': expiration,
+    });
+  }
+
+  // Send OTP via email using ZeptoMail
+  Future<void> sendOtpEmail(String email, String otp) async {
+    final headers = {
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+      'Authorization': _apiKey,
+    };
+    final body = jsonEncode({
+      'from': {'address': _fromEmail},
+      'to': [
+        {'email_address': {'address': email}}
+      ],
+      'subject': 'Your OTP Code',
+      'htmlbody': '<div><b>Your OTP code is $otp. It will expire in 5 minutes.</b></div>',
+    });
+
+    final response = await http.post(
+      Uri.parse(_zeptoMailApiUrl),
+      headers: headers,
+      body: body,
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to send OTP email: ${response.body}');
+    }
+  }
+
+  // Verify OTP
+  Future<bool> verifyOtp(String uid, String enteredOtp) async {
+    final doc = await _firestore.collection('admins').doc(uid).get();
+    final data = doc.data();
+    if (data == null) return false;
+
+    final storedOtp = data['otp'] as String?;
+    final expiration = data['otpExpiration'] as Timestamp?;
+
+    if (storedOtp == null || expiration == null) return false;
+
+    if (DateTime.now().isAfter(expiration.toDate())) {
+      return false; // OTP expired
+    }
+
+    return storedOtp == enteredOtp;
+  }
+
+  // Mark OTP as verified
+  Future<void> markOtpVerified(String uid) async {
+    await _firestore.collection('admins').doc(uid).update({
+      'otpVerified': true,
+      'otp': null,
+      'otpExpiration': null,
+    });
+  }
+
+  // Create user with email verification
   Future<void> createUserWithEmailVerification({
     required String fullName,
     required String email,
     required String password,
   }) async {
-    // 1. Create the user in Firebase Auth
-    UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
+    final userCredential = await _auth.createUserWithEmailAndPassword(
       email: email,
       password: password,
     );
-    User? user = userCredential.user;
-
-    // 2. Send a verification email
-    await user?.sendEmailVerification();
-
-    // 3. Optionally store additional user info in Firestore
-    final uid = user?.uid;
-    if (uid != null) {
-      await _firestore.collection('admins').doc(uid).set({
+    final user = userCredential.user;
+    if (user != null) {
+      await user.sendEmailVerification();
+      await _firestore.collection('admins').doc(user.uid).set({
         'fullName': fullName,
         'email': email,
         'createdAt': DateTime.now(),
         'emailVerified': false,
         'phoneVerified': false,
+        'otpVerified': false,
+        'otp': null,
+        'otpExpiration': null,
       });
     }
   }
 
-  /// Check if the current user's email is verified.
+  // Check email verification status
   Future<bool> checkEmailVerification() async {
-    User? user = _auth.currentUser;
-    if (user == null) return false;
-
-    await user.reload(); // Refresh user data from Firebase
-    user = _auth.currentUser;
+    final user = _auth.currentUser;
+    await user?.reload();
     return user?.emailVerified ?? false;
   }
 
@@ -56,76 +123,6 @@ class AuthService {
     User? user = _auth.currentUser;
     await user?.sendEmailVerification();
   }
-
-  // ---------------------------------------------------------------------------
-  // 2) PHONE (SMS) VERIFICATION
-  // ---------------------------------------------------------------------------
-  //
-  // Firebase's built‑in phone verification automatically handles reCAPTCHA on
-  // the web and a system UI on mobile. Once the code is sent, you can use it
-  // to sign in (or link) the user.
-  
-  /// Verify phone number by sending an SMS code.
-  /// Returns a [verificationId] which is needed to complete sign‑in.
-  Future<String> verifyPhoneNumber(String phoneNumber) async {
-    Completer<String> completer = Completer();
-
-    await _auth.verifyPhoneNumber(
-      phoneNumber: phoneNumber,
-      timeout: const Duration(seconds: 60),
-      verificationCompleted: (PhoneAuthCredential credential) async {
-        // This callback is called when verification is done automatically.
-        try {
-          await _auth.signInWithCredential(credential);
-          if (!completer.isCompleted) {
-            completer.complete('AUTO_VERIFIED');
-          }
-        } catch (e) {
-          if (!completer.isCompleted) {
-            completer.completeError(e);
-          }
-        }
-      },
-      verificationFailed: (FirebaseAuthException e) {
-        if (!completer.isCompleted) {
-          completer.completeError(e);
-        }
-      },
-      codeSent: (String verificationId, int? resendToken) {
-        if (!completer.isCompleted) {
-          completer.complete(verificationId);
-        }
-      },
-      codeAutoRetrievalTimeout: (String verificationId) {
-        if (!completer.isCompleted) {
-          completer.complete(verificationId);
-        }
-      },
-    );
-
-    return completer.future;
-  }
-
-  /// Sign in (or link) the user with the given [verificationId] and [smsCode].
-  /// This example signs them in directly.
-  Future<void> signInWithSmsCode(String verificationId, String smsCode) async {
-    final credential = PhoneAuthProvider.credential(
-      verificationId: verificationId,
-      smsCode: smsCode,
-    );
-    await _auth.signInWithCredential(credential);
-  }
-
-  /// Update Firestore to mark the user's phone as verified.
-  Future<void> updatePhoneVerified() async {
-    User? user = _auth.currentUser;
-    if (user != null) {
-      await _firestore.collection('admins').doc(user.uid).update({
-        'phoneVerified': true,
-      });
-    }
-  }
-
   // ---------------------------------------------------------------------------
   // 3) AUTHENTICATION PERSISTENCE & SIGN IN
   // ---------------------------------------------------------------------------
