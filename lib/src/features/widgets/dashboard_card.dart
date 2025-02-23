@@ -5,6 +5,7 @@ class DashboardCard extends StatelessWidget {
   final String title;
   final String subtitle;
   final String buttonText;
+  final VoidCallback onPressed;
 
   const DashboardCard({
     super.key,
@@ -12,6 +13,7 @@ class DashboardCard extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.buttonText,
+    required this.onPressed,
   });
 
   @override
@@ -44,12 +46,13 @@ class DashboardCard extends StatelessWidget {
               ),
               const SizedBox(height: 16),
               ElevatedButton(
-                onPressed: () {
-                  // Placeholder for button action
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('$buttonText clicked')),
-                  );
-                },
+                onPressed: onPressed,
+                // onPressed: () {
+                //   // Placeholder for button action
+                //   ScaffoldMessenger.of(context).showSnackBar(
+                //     SnackBar(content: Text('$buttonText clicked')),
+                //   );
+                // },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.deepPurple,
                   foregroundColor: Colors.white,

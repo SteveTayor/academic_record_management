@@ -7,6 +7,7 @@ import '../model/transcript_model.dart';
 
 class DocumentService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  FirebaseFirestore get firestore => _firestore;
 
   /// Create or verify a user exists in Firestore (using univault structure).
   Future<void> createOrVerifyUser(String userName, String matricNumber) async {
@@ -14,9 +15,8 @@ class DocumentService {
       if (userName.isEmpty || matricNumber.isEmpty) {
         throw Exception("User name and matric number cannot be empty.");
       }
-      final userDoc = _firestore
-          .collection('univault')
-          .doc('student_$matricNumber');
+      final userDoc =
+          _firestore.collection('univault').doc('student_$matricNumber');
       final snapshot = await userDoc.get();
       if (!snapshot.exists) {
         await userDoc.set({
@@ -102,14 +102,22 @@ class DocumentService {
 
     for (var line in lines) {
       if (line.contains('Name:')) name = line.replaceAll('Name:', '').trim();
-      if (line.contains('Matric. No:')) matricNumber = line.replaceAll('Matric. No:', '').trim();
-      if (line.contains('Course of Study:')) courseOfStudy = line.replaceAll('Course of Study:', '').trim();
-      if (line.contains('Faculty:')) faculty = line.replaceAll('Faculty:', '').trim();
+      if (line.contains('Matric. No:'))
+        matricNumber = line.replaceAll('Matric. No:', '').trim();
+      if (line.contains('Course of Study:'))
+        courseOfStudy = line.replaceAll('Course of Study:', '').trim();
+      if (line.contains('Faculty:'))
+        faculty = line.replaceAll('Faculty:', '').trim();
       if (line.contains('Sex:')) sex = line.replaceAll('Sex:', '').trim();
-      if (line.contains('Nationality:')) nationality = line.replaceAll('Nationality:', '').trim();
-      if (line.contains('Year of Admission:')) yearOfAdmission = int.tryParse(line.replaceAll('Year of Admission:', '').trim()) ?? 0;
-      if (line.contains('Mode of Entry:')) modeOfEntry = line.replaceAll('Mode of Entry:', '').trim();
-      if (line.contains('Date of Birth:')) dateOfBirth = line.replaceAll('Date of Birth:', '').trim();
+      if (line.contains('Nationality:'))
+        nationality = line.replaceAll('Nationality:', '').trim();
+      if (line.contains('Year of Admission:'))
+        yearOfAdmission =
+            int.tryParse(line.replaceAll('Year of Admission:', '').trim()) ?? 0;
+      if (line.contains('Mode of Entry:'))
+        modeOfEntry = line.replaceAll('Mode of Entry:', '').trim();
+      if (line.contains('Date of Birth:'))
+        dateOfBirth = line.replaceAll('Date of Birth:', '').trim();
     }
 
     return Student(
@@ -136,8 +144,13 @@ class DocumentService {
         continue;
       }
       if (inTable && line.contains('|')) {
-        final parts = line.split('|').map((part) => part.trim()).where((part) => part.isNotEmpty).toList();
-        if (parts.length >= 9) { // Ensure we have all columns
+        final parts = line
+            .split('|')
+            .map((part) => part.trim())
+            .where((part) => part.isNotEmpty)
+            .toList();
+        if (parts.length >= 9) {
+          // Ensure we have all columns
           final courseCode = parts[1];
           final session = parts[2];
           final description = parts[3];
@@ -170,7 +183,9 @@ class DocumentService {
   String _inferAcademicLevel(String courseCode) {
     // Use RegExp to find the first digit in the course code
     final digitMatch = RegExp(r'\d').stringMatch(courseCode);
-    final level = digitMatch != null ? digitMatch : '1'; // Default to '1' if no digit found
+    final level = digitMatch != null
+        ? digitMatch
+        : '1'; // Default to '1' if no digit found
     return '${int.parse(level)}00 Level';
   }
 
@@ -183,7 +198,7 @@ class DocumentService {
       final userDoc = _firestore
           .collection('univault')
           .doc('student_${document.matricNumber}');
-      
+
       final docRef = userDoc
           .collection('levels')
           .doc(document.level)
@@ -222,9 +237,8 @@ class DocumentService {
         throw Exception("Matric number must be provided.");
       }
 
-      final userDoc = _firestore
-          .collection('univault')
-          .doc('student_$matricNumber');
+      final userDoc =
+          _firestore.collection('univault').doc('student_$matricNumber');
       final snapshot = await userDoc.get();
 
       if (!snapshot.exists) {
@@ -238,15 +252,15 @@ class DocumentService {
   }
 
   /// Fetch All Documents for a User
-  Future<List<DocumentModel>> fetchDocuments(String matricNumber, {String? level}) async {
+  Future<List<DocumentModel>> fetchDocuments(String matricNumber,
+      {String? level}) async {
     try {
       if (matricNumber.isEmpty) {
         throw Exception("Matric number must be provided.");
       }
 
-      final userDoc = _firestore
-          .collection('univault')
-          .doc('student_$matricNumber');
+      final userDoc =
+          _firestore.collection('univault').doc('student_$matricNumber');
 
       QuerySnapshot<Map<String, dynamic>> snapshot;
       if (level != null) {

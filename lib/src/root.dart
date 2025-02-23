@@ -1,3 +1,4 @@
+import 'package:archival_system/src/features/screens/other_screens/landing_page_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -75,7 +76,7 @@ class _RootPageState extends State<RootPage> {
             // No logged in user
             final user = authSnapshot.data;
             if (user == null) {
-              return const LoginPage();
+              return const LandingPage();
             }
 
             // User logged in - check OTP verification status
@@ -97,7 +98,7 @@ class _RootPageState extends State<RootPage> {
                 }
 
                 // Navigate to appropriate screen based on OTP status
-                return otpSnapshot.data! 
+                return otpSnapshot.data!
                     ? const DashboardPage()
                     : OtpVerificationPage(email: user.email!);
               },

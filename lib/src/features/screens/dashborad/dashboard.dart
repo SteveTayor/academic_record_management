@@ -1,6 +1,11 @@
 import 'package:archival_system/src/features/screens/other_screens/ocr_screen.dart';
 import 'package:flutter/material.dart';
-import '../../widgets/dashboard_card.dart'; 
+import 'package:provider/provider.dart';
+
+import '../../../core/model/document_model.dart';
+import '../../../core/service/document_service.dart';
+import '../../widgets/dashboard_card.dart';
+
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
 
@@ -14,6 +19,8 @@ class _DashboardPageState extends State<DashboardPage> {
   static const Color white = Colors.white;
   static const Color blue = Colors.blue;
   static const Color black = Colors.black;
+
+  final DocumentService _documentService = DocumentService();
 
   @override
   Widget build(BuildContext context) {
@@ -33,11 +40,11 @@ class _DashboardPageState extends State<DashboardPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildDashboardMetrics(),
+              _buildDashboardMetrics(context),
               const SizedBox(height: 24),
               Center(child: _buildQuickActions()),
               const SizedBox(height: 24),
-              _buildRecentDocumentAccess(),
+              _buildRecentDocumentAccess(context),
             ],
           ),
         ),
@@ -86,25 +93,6 @@ class _DashboardPageState extends State<DashboardPage> {
               title: const Text('Users', style: TextStyle(color: black)),
               onTap: () => Navigator.pop(context), // Placeholder navigation
             ),
-            // ListTile(
-            //   leading: const Icon(Icons.lock, color: black),
-            //   title: const Text('Access Logs', style: TextStyle(color: black)),
-            //   onTap: () => Navigator.pop(context), // Placeholder navigation
-            // ),
-            // ExpansionTile(
-            //   leading: const Icon(Icons.bar_chart, color: black),
-            //   title: const Text('Reports', style: TextStyle(color: black)),
-            //   children: [
-            //     ListTile(
-            //       title: const Text('Security Report', style: TextStyle(color: black)),
-            //       onTap: () => Navigator.pop(context), // Placeholder navigation
-            //     ),
-            //     ListTile(
-            //       title: const Text('Usage Analytics', style: TextStyle(color: black)),
-            //       onTap: () => Navigator.pop(context), // Placeholder navigation
-            //     ),
-            //   ],
-            // ),
             const Spacer(),
             Padding(
               padding: const EdgeInsets.all(16.0),
@@ -120,7 +108,8 @@ class _DashboardPageState extends State<DashboardPage> {
                     children: [
                       const Text(
                         'Admin User',
-                        style: TextStyle(fontWeight: FontWeight.bold, color: black),
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold, color: black),
                       ),
                       Text(
                         'System Administrator',
@@ -137,37 +126,53 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  // Dashboard metrics section
-  Widget _buildDashboardMetrics() {
-    return Wrap(
-      spacing: 16,
-      runSpacing: 16,
-      children: const [
-        DashboardCard(
-          icon: Icons.folder,
-          title: 'Total Documents',
-          subtitle: '1,234 files stored',
-          buttonText: 'View All',
-        ),
-        DashboardCard(
-          icon: Icons.refresh,
-          title: 'Recent Retrievals',
-          subtitle: '156 documents this week',
-          buttonText: 'See Details',
-        ),
-        DashboardCard(
-          icon: Icons.security,
-          title: 'Security Alerts',
-          subtitle: '3 suspicious activities',
-          buttonText: 'Review',
-        ),
-        DashboardCard(
-          icon: Icons.analytics,
-          title: 'Access Summary',
-          subtitle: '892 total accesses today',
-          buttonText: 'View Logs',
-        ),
-      ],
+  // Dashboard metrics section (dynamic data from Firestore)
+  Widget _buildDashboardMetrics(BuildContext context) {
+    return FutureBuilder<Map<String, dynamic>>(
+      future: _fetchDashboardMetrics(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (snapshot.hasError) {
+          return const Center(child: Text('Error loading metrics'));
+        }
+        final data = snapshot.data ?? {};
+        final totalDocuments = data['totalDocuments'] ?? 0;
+        final recentRetrievals = data['recentRetrievals'] ?? 0;
+
+        return Wrap(
+          spacing: 16,
+          runSpacing: 16,
+          children: [
+            DashboardCard(
+              icon: Icons.folder,
+              title: 'Total Documents',
+              subtitle: '$totalDocuments files stored',
+              buttonText: 'View All',
+              onPressed: () {
+                // Placeholder for navigation to documents list
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('View All Documents clicked')),
+                );
+              },
+            ),
+            DashboardCard(
+              icon: Icons.refresh,
+              title: 'Recent Retrievals',
+              subtitle: '$recentRetrievals documents this week',
+              buttonText: 'See Details',
+              onPressed: () {
+                // Placeholder for navigation to recent retrievals
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                      content: Text('See Recent Retrievals clicked')),
+                );
+              },
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -175,11 +180,13 @@ class _DashboardPageState extends State<DashboardPage> {
   Widget _buildQuickActions() {
     return ElevatedButton(
       onPressed: () {
-        // Placeholder for upload action
-        // ScaffoldMessenger.of(context).showSnackBar(
-        //   const SnackBar(content: Text('Upload New Document clicked')),
-        // );
-        Navigator.push(context, MaterialPageRoute(builder: (context) => OcrUploadScreen()));
+        // Placeholder for upload action (navigate to OCR upload screen)
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Upload New Document clicked')),
+        );
+        Navigator.push(context, MaterialPageRoute(builder: (context) {
+          return OcrUploadScreen();
+        }));
       },
       style: ElevatedButton.styleFrom(
         backgroundColor: blue,
@@ -191,79 +198,140 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  // Recent document access table
-  Widget _buildRecentDocumentAccess() {
+  // Recent document access table (dynamic data from Firestore)
+  Widget _buildRecentDocumentAccess(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
           'Recent Document Access',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: black),
+          style: TextStyle(
+              fontSize: 18, fontWeight: FontWeight.bold, color: black),
         ),
         const SizedBox(height: 8),
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: DataTable(
-            columnSpacing: 24,
-            columns: const [
-              DataColumn(
-                label: Text('Document', style: TextStyle(fontWeight: FontWeight.bold)),
+        FutureBuilder<List<DocumentModel>>(
+          future: _fetchRecentDocuments(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            if (snapshot.hasError) {
+              return const Center(
+                  child: Text('Error loading recent documents'));
+            }
+            final documents = snapshot.data ?? [];
+            if (documents.isEmpty) {
+              return const Center(child: Text('No recent documents found'));
+            }
+            return SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: DataTable(
+                columnSpacing: 24,
+                columns: const [
+                  DataColumn(
+                    label: Text('Document',
+                        style: TextStyle(fontWeight: FontWeight.bold)),
+                  ),
+                  DataColumn(
+                    label: Text('User',
+                        style: TextStyle(fontWeight: FontWeight.bold)),
+                  ),
+                  DataColumn(
+                    label: Text('Action',
+                        style: TextStyle(fontWeight: FontWeight.bold)),
+                  ),
+                  DataColumn(
+                    label: Text('Timestamp',
+                        style: TextStyle(fontWeight: FontWeight.bold)),
+                  ),
+                  DataColumn(label: Text('')), // For three-dot menu
+                ],
+                rows: documents.map((doc) {
+                  return DataRow(cells: [
+                    DataCell(Text(doc.documentType.isNotEmpty
+                        ? '${doc.documentType}.pdf'
+                        : 'Unknown.pdf')),
+                    DataCell(Text(doc.userName)),
+                    const DataCell(Text('View')),
+                    DataCell(Text(_formatTimestamp(doc.timestamp))),
+                    DataCell(IconButton(
+                      icon: const Icon(Icons.more_vert),
+                      onPressed: () {
+                        // Placeholder for menu action
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                              content: Text(
+                                  'More options for ${doc.documentType} clicked')),
+                        );
+                      },
+                    )),
+                  ]);
+                }).toList(),
               ),
-              DataColumn(
-                label: Text('User', style: TextStyle(fontWeight: FontWeight.bold)),
-              ),
-              DataColumn(
-                label: Text('Action', style: TextStyle(fontWeight: FontWeight.bold)),
-              ),
-              DataColumn(
-                label: Text('Timestamp', style: TextStyle(fontWeight: FontWeight.bold)),
-              ),
-              DataColumn(label: Text('')), // For three-dot menu
-            ],
-            rows: [
-              DataRow(cells: [
-                const DataCell(Text('Research Paper.pdf')),
-                const DataCell(Text('John Doe')),
-                const DataCell(Text('View')),
-                const DataCell(Text('2 minutes ago')),
-                DataCell(IconButton(
-                  icon: const Icon(Icons.more_vert),
-                  onPressed: () {
-                    // Placeholder for menu action
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('More options clicked')),
-                    );
-                  },
-                )),
-              ]),
-              DataRow(cells: [
-                const DataCell(Text('Thesis Draft.docx')),
-                const DataCell(Text('Jane Smith')),
-                const DataCell(Text('Edit')),
-                const DataCell(Text('15 minutes ago')),
-                DataCell(IconButton(
-                  icon: const Icon(Icons.more_vert),
-                  onPressed: () {
-                    // Placeholder for menu action
-                  },
-                )),
-              ]),
-              DataRow(cells: [
-                const DataCell(Text('Lab Results.xlsx')),
-                const DataCell(Text('Mike Johnson')),
-                const DataCell(Text('View')),
-                const DataCell(Text('1 hour ago')),
-                DataCell(IconButton(
-                  icon: const Icon(Icons.more_vert),
-                  onPressed: () {
-                    // Placeholder for menu action
-                  },
-                )),
-              ]),
-            ],
-          ),
+            );
+          },
         ),
       ],
     );
+  }
+
+  // Helper method to fetch dashboard metrics from Firestore
+  Future<Map<String, dynamic>> _fetchDashboardMetrics() async {
+    try {
+      // Fetch total documents (sum of totalDocuments for all students)
+      final querySnapshot =
+          await _documentService.firestore.collection('univault').get();
+      int totalDocuments = 0;
+      int recentRetrievals = 0; // Placeholder for recent retrievals logic
+
+      for (var doc in querySnapshot.docs) {
+        final data = doc.data();
+        totalDocuments += (data['totalDocuments'] as int? ?? 0);
+      }
+
+      // Simulate recent retrievals (replace with actual logic if available in Firestore)
+      // For now, assume recent retrievals are 10% of total documents
+      recentRetrievals = (totalDocuments * 0.1).round();
+
+      return {
+        'totalDocuments': totalDocuments,
+        'recentRetrievals': recentRetrievals,
+      };
+    } catch (e) {
+      throw Exception('Error fetching dashboard metrics: $e');
+    }
+  }
+
+  // Helper method to fetch recent documents from Firestore
+  Future<List<DocumentModel>> _fetchRecentDocuments() async {
+    try {
+      // Fetch the 3 most recent documents across all students (ordered by timestamp)
+      final querySnapshot = await _documentService.firestore
+          .collectionGroup('documents')
+          .orderBy('timestamp', descending: true)
+          .limit(3)
+          .get();
+
+      return querySnapshot.docs
+          .map((doc) =>
+              DocumentModel.fromMap(doc.id, doc.data() as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      throw Exception('Error fetching recent documents: $e');
+    }
+  }
+
+  // Helper method to format timestamp for display
+  String _formatTimestamp(DateTime timestamp) {
+    final now = DateTime.now();
+    final difference = now.difference(timestamp);
+
+    if (difference.inMinutes < 60) {
+      return '${difference.inMinutes} minutes ago';
+    } else if (difference.inHours < 24) {
+      return '${difference.inHours} hours ago';
+    } else {
+      return '${difference.inDays} days ago';
+    }
   }
 }
