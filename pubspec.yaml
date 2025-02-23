@@ -16,6 +16,7 @@ dependencies:
     sdk: flutter
   flutter_localizations:
     sdk: flutter
+  timeago: ^3.7.0
 
 dev_dependencies:
   flutter_test:

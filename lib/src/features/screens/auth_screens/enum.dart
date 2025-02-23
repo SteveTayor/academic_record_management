@@ -9,3 +9,9 @@ enum RegistrationStep {
   otpVerification,
   complete,
 }
+
+enum LoginStep {
+  enterCredentials,
+  verifyOtp,
+  complete,
+}

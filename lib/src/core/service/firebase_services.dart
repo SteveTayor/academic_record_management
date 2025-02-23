@@ -11,9 +11,9 @@ class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  static const String _zeptoMailApiUrl = 'https://api.zeptomail.com/v1.1/email';
-  static const String _apiKey =
-      'Zoho-enczapikey wSsVR61zqxfzXKl/nGasJr8/nFldD1/2EksviVX3unStH63L8Mcyl0bLBFKvH/dLRzJvFzsW8LkrnB5R2mAJj915zVoIDCiF9mqRe1U4J3x17qnvhDzOW2hVkhqLKYINxAtrmmlnEsAi+g==';
+  // static const String _zeptoMailApiUrl = 'https://api.zeptomail.com/v1.1/email';
+  // static const String _apiKey =
+      // 'Zoho-enczapikey wSsVR61zqxfzXKl/nGasJr8/nFldD1/2EksviVX3unStH63L8Mcyl0bLBFKvH/dLRzJvFzsW8LkrnB5R2mAJj915zVoIDCiF9mqRe1U4J3x17qnvhDzOW2hVkhqLKYINxAtrmmlnEsAi+g==';
   static const String _fromEmail = 'noreply@joseph-jahazil.name.ng';
 
   // Generate a 6-digit OTP
@@ -33,30 +33,28 @@ class AuthService {
 
   // Send OTP via email using ZeptoMail
   Future<void> sendOtpEmail(String email, String otp) async {
-    final headers = {
-      'Accept': 'application/json',
-      'Content-Type': 'application/json',
-      'Authorization': _apiKey,
-    };
-    final body = jsonEncode({
-      'from': {'address': _fromEmail},
-      'to': [
-        {'email_address': {'address': email}}
-      ],
-      'subject': 'Your OTP Code',
-      'htmlbody': '<div><b>Your OTP code is $otp. It will expire in 5 minutes.</b></div>',
-    });
+  final headers = {
+    'Content-Type': 'application/json',
+  };
+  final body = jsonEncode({
+    'from': {'address': _fromEmail},
+    'to': [
+      {'email_address': {'address': email}}
+    ],
+    'subject': 'Your OTP Code',
+    'htmlbody': '<div><b>Your OTP code is $otp. It will expire in 5 minutes.</b></div>'
+  });
 
-    final response = await http.post(
-      Uri.parse(_zeptoMailApiUrl),
-      headers: headers,
-      body: body,
-    );
+  final response = await http.post(
+    Uri.parse('http://localhost:3000/send-email'),
+    headers: headers,
+    body: body,
+  );
 
-    if (response.statusCode != 200) {
-      throw Exception('Failed to send OTP email: ${response.body}');
-    }
+  if (response.statusCode != 200) {
+    throw Exception('Failed to send OTP email: ${response.body}');
   }
+}
 
   // Verify OTP
   Future<bool> verifyOtp(String uid, String enteredOtp) async {
@@ -133,6 +131,14 @@ class AuthService {
     await _auth.setPersistence(Persistence.LOCAL);
   }
 
+  // Clear OTP after verification
+  Future<void> clearOtp(String uid) async {
+    await _firestore.collection('admins').doc(uid).update({
+      'otp': null,
+      'otpExpiration': null,
+    });
+  }
+
   /// Sign in with email and password.
   Future<User?> signInWithEmailPassword(String email, String password) async {
     final credential = await _auth.signInWithEmailAndPassword(
@@ -151,18 +157,18 @@ class AuthService {
     await _auth.sendPasswordResetEmail(email: email);
   }
   /// Finalizes a multi-factor sign-in using the provided SMS code.
-Future<void> finalizeMultiFactorSignIn({
-  required MultiFactorResolver resolver,
-  required String verificationId,
-  required String smsCode,
-}) async {
-  final credential = PhoneAuthProvider.credential(
-    verificationId: verificationId,
-    smsCode: smsCode,
-  );
-  final assertion = PhoneMultiFactorGenerator.getAssertion(credential);
-  await resolver.resolveSignIn(assertion);
-}
+// Future<void> finalizeMultiFactorSignIn({
+//   required MultiFactorResolver resolver,
+//   required String verificationId,
+//   required String smsCode,
+// }) async {
+//   final credential = PhoneAuthProvider.credential(
+//     verificationId: verificationId,
+//     smsCode: smsCode,
+//   );
+//   final assertion = PhoneMultiFactorGenerator.getAssertion(credential);
+//   await resolver.resolveSignIn(assertion);
+// }
 
 
   /// Signs out the current user.

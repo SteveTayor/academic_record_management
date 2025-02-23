@@ -514,7 +514,7 @@ class _AdminRegistrationPageState extends State<AdminRegistrationPage> {
                           child: const Text('I have verified, continue',
                               textAlign: TextAlign.center,
                               style:
-                                  TextStyle(fontSize: 18, color: Colors.white)),
+                                  TextStyle(fontSize: 14, color: Colors.white)),
                         ),
                       ),
               ),
@@ -522,32 +522,32 @@ class _AdminRegistrationPageState extends State<AdminRegistrationPage> {
             SizedBox(
               width: 30,
             ),
-            Container(
-              width: 150,
-              decoration: BoxDecoration(
-                backgroundBlendMode: BlendMode.darken,
-                borderRadius: BorderRadius.circular(15),
-                color: Colors.blue.shade800,
-              ),
-              child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 15.0, vertical: 10),
-                child: _isResendEmailLoading
-                    ? const Center(
-                        child: CircularProgressIndicator(
-                          valueColor:
-                              AlwaysStoppedAnimation<Color>(Colors.white),
-                        ),
-                      )
-                    : InkWell(
-                        onTap: _resendEmailVerification,
-                        child: Flexible(
+            Expanded(
+              child: Container(
+                width: 150,
+                decoration: BoxDecoration(
+                  backgroundBlendMode: BlendMode.darken,
+                  borderRadius: BorderRadius.circular(15),
+                  color: Colors.blue.shade800,
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 15.0, vertical: 10),
+                  child: _isResendEmailLoading
+                      ? const Center(
+                          child: CircularProgressIndicator(
+                            valueColor:
+                                AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
+                      : InkWell(
+                          onTap: _resendEmailVerification,
                           child: const Text('Resend Verification Email',
                               textAlign: TextAlign.center,
                               style:
-                                  TextStyle(fontSize: 18, color: Colors.white)),
+                                  TextStyle(fontSize: 14, color: Colors.white)),
                         ),
-                      ),
+                ),
               ),
             ),
           ],
@@ -587,23 +587,41 @@ class _AdminRegistrationPageState extends State<AdminRegistrationPage> {
         const Text('Enter the OTP sent to your email:'),
         TextField(
           controller: _otpController,
-          decoration: const InputDecoration(labelText: 'OTP'),
+          decoration: InputDecoration(
+              fillColor: Colors.blueGrey.shade50,
+              filled: true,
+              enabledBorder: OutlineInputBorder(
+                borderSide: BorderSide(color: Colors.blueGrey.shade50),
+                borderRadius: BorderRadius.circular(15),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderSide: BorderSide(color: Colors.blueGrey.shade50),
+                borderRadius: BorderRadius.circular(15),
+              ),
+              border: InputBorder.none,
+              hintText: 'OTP'),
         ),
-        ElevatedButton(style: ButtonStyle(
-          backgroundColor: WidgetStatePropertyAll(Colors.blue.shade800),
-          padding: WidgetStatePropertyAll(EdgeInsets.symmetric(horizontal: 20, vertical: 10)),
-          shape: WidgetStatePropertyAll(RoundedRectangleBorder(borderRadius: BorderRadius.circular(15))),
-        ),
+        ElevatedButton(
+          style: ButtonStyle(
+            backgroundColor: WidgetStatePropertyAll(Colors.blue.shade800),
+            padding: WidgetStatePropertyAll(
+                EdgeInsets.symmetric(horizontal: 20, vertical: 10)),
+            shape: WidgetStatePropertyAll(RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(15))),
+          ),
           onPressed: _isVerifyLoading ? null : _handleOtpVerification,
           child: _isVerifyLoading
               ? const CircularProgressIndicator()
               : const Text('Verify OTP'),
         ),
-        ElevatedButton(style: ButtonStyle(
-          backgroundColor: WidgetStatePropertyAll(Colors.blue.shade800),
-          padding: WidgetStatePropertyAll(EdgeInsets.symmetric(horizontal: 20, vertical: 10)),
-          shape: WidgetStatePropertyAll(RoundedRectangleBorder(borderRadius: BorderRadius.circular(15))),
-        ),
+        ElevatedButton(
+          style: ButtonStyle(
+            backgroundColor: WidgetStatePropertyAll(Colors.blue.shade800),
+            padding: WidgetStatePropertyAll(
+                EdgeInsets.symmetric(horizontal: 20, vertical: 10)),
+            shape: WidgetStatePropertyAll(RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(15))),
+          ),
           onPressed: _isResendOtpLoadin ? null : _resendOtp,
           child: _isResendOtpLoadin
               ? const CircularProgressIndicator()
@@ -633,10 +651,10 @@ class _AdminRegistrationPageState extends State<AdminRegistrationPage> {
   //           decoration: const InputDecoration(labelText: 'SMS Code'),
   //         ),
   //       ElevatedButton(style: ButtonStyle(
-        //   backgroundColor: WidgetStatePropertyAll(Colors.blue.shade800),
-        //   padding: WidgetStatePropertyAll(EdgeInsets.symmetric(horizontal: 20, vertical: 10)),
-        //   shape: WidgetStatePropertyAll(RoundedRectangleBorder(borderRadius: BorderRadius.circular(15))),
-        // ),
+  //   backgroundColor: WidgetStatePropertyAll(Colors.blue.shade800),
+  //   padding: WidgetStatePropertyAll(EdgeInsets.symmetric(horizontal: 20, vertical: 10)),
+  //   shape: WidgetStatePropertyAll(RoundedRectangleBorder(borderRadius: BorderRadius.circular(15))),
+  // ),
   //         onPressed:
   //             _verificationId == null ? null : _handlePhoneVerificationCode,
   //         child: const Text('Verify Phone'),
@@ -664,16 +682,18 @@ class _AdminRegistrationPageState extends State<AdminRegistrationPage> {
           'Your account is verified! Registration complete.',
           style: TextStyle(color: Colors.green),
         ),
-        ElevatedButton(style: ButtonStyle(
-          backgroundColor: WidgetStatePropertyAll(Colors.blue.shade800),
-          padding: WidgetStatePropertyAll(EdgeInsets.symmetric(horizontal: 20, vertical: 10)),
-          shape: WidgetStatePropertyAll(RoundedRectangleBorder(borderRadius: BorderRadius.circular(15))),
-        ),
-          
+        ElevatedButton(
+          style: ButtonStyle(
+            backgroundColor: WidgetStatePropertyAll(Colors.blue.shade800),
+            padding: WidgetStatePropertyAll(
+                EdgeInsets.symmetric(horizontal: 20, vertical: 10)),
+            shape: WidgetStatePropertyAll(RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(15))),
+          ),
           onPressed: () {
             // Navigate to your admin dashboard or anywhere else.
             Navigator.push(context,
-                          MaterialPageRoute(builder: (context) => DashboardPage()));
+                MaterialPageRoute(builder: (context) => DashboardPage()));
           },
           child: const Text('Go to Dashboard'),
         ),
