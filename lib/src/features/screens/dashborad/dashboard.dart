@@ -1,9 +1,11 @@
+import 'package:archival_system/src/features/screens/other_screens/document_overview_screen.dart';
 import 'package:flutter/material.dart';
 
 import '../../../core/model/document_model.dart';
 import '../../../core/service/document_service.dart';
 import '../../widgets/dashboard_card.dart';
 import '../../widgets/sidebar.dart';
+import '../other_screens/document_view_screen.dart';
 import '../other_screens/ocr_screen.dart';
 
 class DashboardPage extends StatefulWidget {
@@ -14,9 +16,9 @@ class DashboardPage extends StatefulWidget {
 }
 
 class _DashboardPageState extends State<DashboardPage> {
-  static const Color lightPurple = Color(0xFFE6E6FA);
+  static const Color lightblue = Color.fromARGB(255, 132, 132, 240);
   static const Color white = Colors.white;
-  static const Color blue = Colors.blue;
+  static Color blue = Colors.blue.shade700;
   static const Color black = Colors.black;
 
   final DocumentService _documentService = DocumentService();
@@ -25,13 +27,13 @@ class _DashboardPageState extends State<DashboardPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       // Optional: keep an app bar or remove it if you want a full-screen approach
-      appBar: AppBar(
-        title: const Text('Dashboard Overview'),
-        centerTitle: true,
-        backgroundColor: white,
-        foregroundColor: black,
-        elevation: 0,
-      ),
+      // appBar: AppBar(
+      //   title: const Text('Dashboard Overview'),
+      //   centerTitle: true,
+      //   backgroundColor: white,
+      //   foregroundColor: black,
+      //   elevation: 0,
+      // ),
       backgroundColor: white,
       body: Row(
         children: [
@@ -45,8 +47,19 @@ class _DashboardPageState extends State<DashboardPage> {
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(16.0),
               child: Column(
+mainAxisAlignment: MainAxisAlignment.start,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  SizedBox(height:20),
+                  const Text(
+                    'Dashboard Overview',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: black,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
                   _buildDashboardMetrics(context),
                   const SizedBox(height: 24),
                   Center(child: _buildQuickActions()),
@@ -67,11 +80,19 @@ class _DashboardPageState extends State<DashboardPage> {
       // Already on the dashboard, do nothing or pop
     } else if (menu == 'Documents') {
       // TODO: Navigate to a Documents page or screen
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const DocumentOverviewScreen()),
+      );
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Navigate to Documents screen')),
       );
     } else if (menu == 'Users') {
       // TODO: Navigate to a Users page or screen
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => UserFolderScreen()),
+      );
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Navigate to Users screen')),
       );

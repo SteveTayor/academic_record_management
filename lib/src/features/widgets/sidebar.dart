@@ -14,7 +14,7 @@ class Sidebar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: 200,
-      color: Colors.blue[100],
+      color: Colors.blue[800],
       child: Column(
         children: [
           // Top Section (Logo or App Title)

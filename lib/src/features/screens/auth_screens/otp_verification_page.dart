@@ -170,7 +170,7 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
         final isValid = await _authService.verifyOtp(user.uid, enteredOtp);
         if (isValid) {
           await _authService.markOtpVerified(user.uid);
-          Navigator.of(context).pushReplacement(
+          Navigator.pushReplacement(context,
             MaterialPageRoute(
               builder: (_) => const DashboardPage(),
             ),

@@ -692,7 +692,7 @@ class _AdminRegistrationPageState extends State<AdminRegistrationPage> {
           ),
           onPressed: () {
             // Navigate to your admin dashboard or anywhere else.
-            Navigator.push(context,
+            Navigator.pushReplacement(context,
                 MaterialPageRoute(builder: (context) => DashboardPage()));
           },
           child: const Text('Go to Dashboard'),
