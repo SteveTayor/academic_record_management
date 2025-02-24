@@ -33,7 +33,7 @@ class LandingPage extends StatelessWidget {
               style: GoogleFonts.poppins(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
-                color: Colors.purple[800],
+                color: Colors.blue[800],
               )),
           Row(
             children: [
@@ -50,12 +50,12 @@ class LandingPage extends StatelessWidget {
                       MaterialPageRoute(builder: (context) => LoginPage()));
                 },
                 child: Text('Login',
-                    style: GoogleFonts.poppins(color: Colors.grey[700])),
+                    style: GoogleFonts.poppins(color: Colors.grey[700],)),
               ),
               const SizedBox(width: 10),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.purple[800],
+                  backgroundColor: Colors.blue[800],
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
@@ -141,7 +141,7 @@ class LandingPage extends StatelessWidget {
           padding: const EdgeInsets.all(24),
           child: Column(
             children: [
-              Icon(icon, size: 40, color: Colors.purple[800]),
+              Icon(icon, size: 40, color: Colors.blue[800]),
               const SizedBox(height: 20),
               Text(title,
                   style: GoogleFonts.poppins(

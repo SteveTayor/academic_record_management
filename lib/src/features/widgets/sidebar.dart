@@ -14,7 +14,7 @@ class Sidebar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: 200,
-      color: Colors.purple[100],
+      color: Colors.blue[100],
       child: Column(
         children: [
           Padding(
@@ -44,17 +44,17 @@ class Sidebar extends StatelessWidget {
 
   Widget _buildMenuItem(String title, IconData icon, bool isSelected) {
     return ListTile(
-      leading: Icon(icon, color: isSelected ? Colors.purple[700] : Colors.black),
+      leading: Icon(icon, color: isSelected ? Colors.blue[700] : Colors.black),
       title: Text(
         title,
         style: TextStyle(
-          color: isSelected ? Colors.purple[700] : Colors.black,
+          color: isSelected ? Colors.blue[700] : Colors.black,
           fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
         ),
       ),
       onTap: () => onMenuSelected(title),
       selected: isSelected,
-      selectedTileColor: Colors.purple[200],
+      selectedTileColor: Colors.blue[200],
     );
   }
 }

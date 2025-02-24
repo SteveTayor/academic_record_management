@@ -24,7 +24,7 @@ class _DocumentPreviewScreenState extends State<DocumentPreviewScreen> {
   final DocumentService _documentService = DocumentService();
   
   String _selectedLevel = '300 Level';
-  String _selectedDocType = 'Transcript';
+  String _selectedDocType = 'Other';
   bool _isSaving = false;
 
   final List<String> _docTypes = [
@@ -35,12 +35,61 @@ class _DocumentPreviewScreenState extends State<DocumentPreviewScreen> {
     'Other'
   ];
 
+  Widget _buildStructuredView(String documentType, String text) {
+    final appState = Provider.of<AppState>(context, listen: false);
+    if (documentType == 'Transcript' && appState.currentTranscript != null) {
+      final transcript = appState.currentTranscript!;
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Student: ${transcript.student.name}', style: TextStyle(fontWeight: FontWeight.bold)),
+          Text('Matric Number: ${transcript.student.matricNumber}'),
+          Text('Cumulative GPA: ${transcript.cumulativeGpa}'),
+          Text('Courses:', style: TextStyle(fontWeight: FontWeight.bold)),
+          ...transcript.student.courses.map((course) => Text(
+            '- ${course.courseCode} (${course.description}): ${course.remarks} (${course.marksPercentage}%)',
+          )),
+        ],
+      );
+    } else if (documentType == 'Letter' && appState.currentDocument?.structuredData != null) {
+      final data = appState.currentDocument!.structuredData!;
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('From: ${data['from'] ?? 'Unknown'}', style: TextStyle(fontWeight: FontWeight.bold)),
+          Text('To: ${data['to'] ?? 'Unknown'}'),
+          Text('Date: ${data['date'] ?? 'Unknown'}'),
+          Text('Body: ${data['body'] ?? text}'),
+        ],
+      );
+    }
+    return Text(text); // Fallback for other document types or unparsed data
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    // Set initial extracted text in AppState
+    Provider.of<AppState>(context, listen: false).setExtractedText(widget.extractedText);
+    // Set initial document type (default to 'Other' or parse from text if possible)
+    Provider.of<AppState>(context, listen: false).setDocumentType(_selectedDocType);
+  }
+
+  @override
+  void dispose() {
+    _userNameController.dispose();
+    _matricNumberController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
+    final appState = Provider.of<AppState>(context);
+
     return Scaffold(
       body: Row(
         children: [
-           Sidebar(selectedMenu: 'Documents', onMenuSelected: (String ) {  },),
+          Sidebar(selectedMenu: 'Documents', onMenuSelected: (String menu) { /* Handle navigation */ },),
           Expanded(
             child: Padding(
               padding: const EdgeInsets.all(16.0),
@@ -49,7 +98,7 @@ class _DocumentPreviewScreenState extends State<DocumentPreviewScreen> {
                 children: [
                   _buildBreadcrumbs(),
                   const SizedBox(height: 20),
-                  _buildDocumentPreview(),
+                  _buildDocumentPreview(appState),
                   const SizedBox(height: 24),
                   _buildStudentDetailsForm(),
                   const Spacer(),
@@ -73,7 +122,7 @@ class _DocumentPreviewScreenState extends State<DocumentPreviewScreen> {
     );
   }
 
-  Widget _buildDocumentPreview() {
+  Widget _buildDocumentPreview(AppState appState) {
     return Card(
       elevation: 2,
       child: Padding(
@@ -113,10 +162,7 @@ class _DocumentPreviewScreenState extends State<DocumentPreviewScreen> {
                 borderRadius: BorderRadius.circular(8),
               ),
               child: SingleChildScrollView(
-                child: Text(
-                  widget.extractedText,
-                  style: const TextStyle(fontSize: 14),
-                ),
+                child: _buildStructuredView(_selectedDocType, widget.extractedText),
               ),
             ),
           ],
@@ -144,9 +190,9 @@ class _DocumentPreviewScreenState extends State<DocumentPreviewScreen> {
                 ),
               ),
               const Divider(height: 30),
-              _buildFormField('Student Name', 'Enter student\'s full name'),
+              _buildFormField('Student Name', 'Enter student\'s full name', _userNameController),
               const SizedBox(height: 16),
-              _buildFormField('Matric Number', 'Enter matric number'),
+              _buildFormField('Matric Number', 'Enter matric number', _matricNumberController),
               const SizedBox(height: 24),
               _buildLevelSelector(),
               const SizedBox(height: 24),
@@ -160,8 +206,9 @@ class _DocumentPreviewScreenState extends State<DocumentPreviewScreen> {
     );
   }
 
-  Widget _buildFormField(String label, String hint) {
+  Widget _buildFormField(String label, String hint, TextEditingController controller) {
     return TextFormField(
+      controller: controller,
       decoration: InputDecoration(
         labelText: label,
         hintText: hint,
@@ -226,7 +273,10 @@ class _DocumentPreviewScreenState extends State<DocumentPreviewScreen> {
                     ? Colors.white
                     : Colors.black,
               ),
-              onPressed: () => setState(() => _selectedDocType = _docTypes[index]),
+              onPressed: () => setState(() {
+                _selectedDocType = _docTypes[index];
+                Provider.of<AppState>(context, listen: false).setDocumentType(_selectedDocType);
+              }),
               child: Text(_docTypes[index]),
             );
           },
@@ -295,6 +345,8 @@ class _DocumentPreviewScreenState extends State<DocumentPreviewScreen> {
       );
 
       await _documentService.saveDocument(document);
+      // Update AppState with the saved document
+      Provider.of<AppState>(context, listen: false).setCurrentDocument(document);
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Document saved successfully')),

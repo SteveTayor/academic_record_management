@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:file_picker/file_picker.dart';
@@ -7,6 +8,7 @@ import 'package:pdf_render/pdf_render.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:image/image.dart' as img;
 import 'dart:ui' as ui;
+import 'dart:html' as html;
 
 import '../../../core/providers/app_provider.dart';
 import '../../widgets/sidebar.dart';
@@ -20,7 +22,7 @@ class OcrUploadScreen extends StatefulWidget {
 }
 
 class _OcrUploadScreenState extends State<OcrUploadScreen> {
-  final TextRecognizer _textRecognizer = GoogleMlKit.vision.textRecognizer();
+  final TextRecognizer _textRecognizer = TextRecognizer();
   bool _isProcessing = false;
 
   Future<void> _pickAndProcessFile() async {
@@ -59,28 +61,32 @@ class _OcrUploadScreenState extends State<OcrUploadScreen> {
   }
 
   Future<String> _processPdf(String pdfPath) async {
-    final document = await PdfDocument.openFile(pdfPath);
-    final tempDir = await getTemporaryDirectory();
-    String fullText = '';
-
-    for (var i = 0; i < document.pageCount; i++) {
-      final page = await document.getPage(i + 1);
-      final image = await page.render(width: 1200, height: 1800);
-      final byteData = await image.imageIfAvailable!
-          .toByteData(format: ui.ImageByteFormat.png);
-      final pngBytes = byteData?.buffer.asUint8List();
-
-      final tempFile = File('${tempDir.path}/page_$i.png');
-      await tempFile.writeAsBytes(pngBytes!);
-
-      final pageText = await _processImage(tempFile.path);
-      fullText += '$pageText\n';
-      await tempFile.delete();
-    }
-
-    await document.dispose();
-    return fullText;
+  if (kIsWeb) {
+    _showErrorSnackbar('PDF processing is not supported on web. Please upload an image or use a server-side solution.');
+    return '';
   }
+  // Existing mobile-like PDF processing
+  final document = await PdfDocument.openFile(pdfPath);
+  final tempDir = await getTemporaryDirectory();
+  String fullText = '';
+
+  for (var i = 0; i < document.pageCount; i++) {
+    final page = await document.getPage(i + 1);
+    final image = await page.render(width: 1200, height: 1800);
+    final byteData = await image.imageIfAvailable!.toByteData(format: ui.ImageByteFormat.png);
+    final pngBytes = byteData?.buffer.asUint8List();
+
+    final tempFile = File('${tempDir.path}/page_$i.png');
+    await tempFile.writeAsBytes(pngBytes!);
+
+    final pageText = await _processImage(tempFile.path);
+    fullText += '$pageText\n';
+    await tempFile.delete();
+  }
+
+  await document.dispose();
+  return fullText;
+}
 
   void _navigateToPreview(String text) {
     Navigator.push(
@@ -143,12 +149,12 @@ class _OcrUploadScreenState extends State<OcrUploadScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.purple[100],
+        color: Colors.blue[100],
         borderRadius: BorderRadius.circular(8),
       ),
       child: Column(
         children: [
-          const Icon(Icons.file_upload, color: Colors.purple),
+          const Icon(Icons.file_upload, color: Colors.blue),
           const SizedBox(height: 8),
           const Text(
             'Upload File',
@@ -164,7 +170,7 @@ class _OcrUploadScreenState extends State<OcrUploadScreen> {
           ElevatedButton(
             onPressed: _isProcessing ? null : _pickAndProcessFile,
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.purple,
+              backgroundColor: Colors.blue,
               foregroundColor: Colors.white,
             ),
             child: _isProcessing
@@ -211,7 +217,7 @@ class _OcrUploadScreenState extends State<OcrUploadScreen> {
                 onPressed: () =>
                     _navigateToPreview(appState.extractedText ?? ''),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.purple,
+                  backgroundColor: Colors.blue,
                   foregroundColor: Colors.white,
                 ),
                 child: const Text('Preview Document'),
@@ -232,15 +238,26 @@ class _OcrUploadScreenState extends State<OcrUploadScreen> {
     );
   }
 
-  Future<void> _saveTextFile(String text) async {
+
+
+Future<void> _saveTextFile(String text) async {
+  if (kIsWeb) {
+    final blob = html.Blob([text], 'text/plain', 'native');
+    final url = html.Url.createObjectUrlFromBlob(blob);
+    final anchor = html.AnchorElement(href: url)
+      ..setAttribute('download', 'extracted_text_${DateTime.now().millisecondsSinceEpoch}.txt')
+      ..click();
+    html.Url.revokeObjectUrl(url);
+    _showSuccessSnackbar('Text saved for download');
+  } else {
     final directory = await getDownloadsDirectory();
     if (directory == null) return;
 
-    final file = File(
-        '${directory.path}/extracted_text_${DateTime.now().millisecondsSinceEpoch}.txt');
+    final file = File('${directory.path}/extracted_text_${DateTime.now().millisecondsSinceEpoch}.txt');
     await file.writeAsString(text);
     _showSuccessSnackbar('Text saved to Downloads');
   }
+}
 
   void _showSuccessSnackbar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(

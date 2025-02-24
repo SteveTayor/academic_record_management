@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
 import '../../../core/service/firebase_services.dart';
@@ -65,58 +66,85 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
                       hintText: 'OTP',
                     ),
                   ),
-                  Row(
-                    spacing: 15,
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      ElevatedButton(
-                        
-                        style: ButtonStyle(
-                          backgroundColor:
-                              WidgetStatePropertyAll(Colors.blue.shade800),
-                          padding: const WidgetStatePropertyAll(EdgeInsets.symmetric(
-                              horizontal: 20, vertical: 10)),
-                          shape: WidgetStatePropertyAll(RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(15))),
-                        ),
-                        onPressed: _isVerifyLoading ? null : _verifyOtp,
-                        child: _isVerifyLoading
-                            ? const Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 20,),
-                              child: CircularProgressIndicator(color: Colors.white,),
+                  SizedBox(height: 10),
+                  Center(
+                    child: RichText(
+                      text: TextSpan(
+                        text: 'Didn\'t receive any code? ',
+                        style: const TextStyle(color: Colors.black),
+                        children: [
+                          TextSpan(
+                            text: 'Resend',
+                            style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.blue.shade600,
+                                fontWeight: FontWeight.w500),
+                            recognizer: TapGestureRecognizer()
+                              ..onTap = _isResendOtpLoading ? null : _resendOtp,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  SizedBox(
+                    height: 8,
+                  ),
+                  Container(
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(15),
+                      color: Colors.blue.shade800,
+                    ),
+                    child: ElevatedButton(
+                      style: ButtonStyle(
+                        backgroundColor:
+                            WidgetStatePropertyAll(Colors.blue.shade800),
+                        padding: const WidgetStatePropertyAll(
+                            EdgeInsets.symmetric(horizontal: 20, vertical: 10)),
+                        shape: WidgetStatePropertyAll(RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(15))),
+                      ),
+                      onPressed: _isVerifyLoading ? null : _verifyOtp,
+                      child: _isVerifyLoading
+                          ? const Padding(
+                              padding: EdgeInsets.symmetric(
+                                  horizontal: 20, vertical: 10),
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                              ),
                             )
-                            : const Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 20,),
+                          : const Padding(
+                              padding: EdgeInsets.symmetric(
+                                  horizontal: 20, vertical: 10),
                               child: Text('Verify OTP',
                                   style: TextStyle(color: Colors.white)),
                             ),
-                      ),
-                      ElevatedButton(
-                          style: ButtonStyle(
-                            backgroundColor:
-                                WidgetStatePropertyAll(Colors.purple.shade800),
-                            padding: const WidgetStatePropertyAll(
-                                EdgeInsets.symmetric(
-                                    horizontal: 20, vertical: 10)),
-                            shape: WidgetStatePropertyAll(
-                                RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(15))),
-                          ),
-                          onPressed: _isResendOtpLoading ? null : _resendOtp,
-                          child: _isResendOtpLoading
-                              ?  const Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 20,),
-                              child: CircularProgressIndicator(color: Colors.white,),
-                            )
-                              : const Padding(
-                                padding: EdgeInsets.symmetric(horizontal: 20,),
-                                child: Text(
-                                    'Resend OTP',
-                                    style: TextStyle(color: Colors.white),
-                                  ),
-                              )),
-                    ],
+                    ),
                   ),
+                  // ElevatedButton(
+                  //     style: ButtonStyle(
+                  //       backgroundColor:
+                  //           WidgetStatePropertyAll(Colors.purple.shade800),
+                  //       padding: const WidgetStatePropertyAll(
+                  //           EdgeInsets.symmetric(
+                  //               horizontal: 20, vertical: 10)),
+                  //       shape: WidgetStatePropertyAll(
+                  //           RoundedRectangleBorder(
+                  //               borderRadius: BorderRadius.circular(15))),
+                  //     ),
+                  //     onPressed: _isResendOtpLoading ? null : _resendOtp,
+                  //     child: _isResendOtpLoading
+                  //         ?  const Padding(
+                  //         padding: EdgeInsets.symmetric(horizontal: 20,),
+                  //         child: CircularProgressIndicator(color: Colors.white,),
+                  //       )
+                  //         : const Padding(
+                  //           padding: EdgeInsets.symmetric(horizontal: 20,),
+                  //           child: Text(
+                  //               'Resend OTP',
+                  //               style: TextStyle(color: Colors.white),
+                  //             ),
+                  //         )),
                   Text(_message, style: const TextStyle(color: Colors.red)),
                 ],
               ),
@@ -142,7 +170,6 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
       if (user != null) {
         final isValid = await _authService.verifyOtp(user.uid, enteredOtp);
         if (isValid) {
-          
           await _authService.markOtpVerified(user.uid);
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(
@@ -169,10 +196,10 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
       final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
         // Reset OTP verification status
-      await FirebaseFirestore.instance
-          .collection('admins')
-          .doc(user.uid)
-          .update({'otpVerified': false});
+        await FirebaseFirestore.instance
+            .collection('admins')
+            .doc(user.uid)
+            .update({'otpVerified': false});
         final otp = _authService.generateOtp();
         await _authService.storeOtp(user.uid, otp);
         await _authService.sendOtpEmail(user.email!, otp);
