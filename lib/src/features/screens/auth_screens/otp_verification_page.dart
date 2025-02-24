@@ -40,7 +40,7 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
               key: _formKey,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                spacing: 18,
+                spacing: 13,
                 children: [
                   const SizedBox(height: 45),
                   const Text('Verify Otp',
@@ -66,7 +66,6 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
                       hintText: 'OTP',
                     ),
                   ),
-                  SizedBox(height: 10),
                   Center(
                     child: RichText(
                       text: TextSpan(

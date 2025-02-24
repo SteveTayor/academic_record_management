@@ -1,18 +1,27 @@
-import 'dart:io';
-import 'package:flutter/foundation.dart';
+import 'dart:async';
+import 'dart:typed_data';
+
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:google_ml_kit/google_ml_kit.dart';
-import 'package:pdf_render/pdf_render.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:image/image.dart' as img;
-import 'dart:ui' as ui;
-import 'dart:html' as html;
+
+// If you’re using ML Kit on mobile, import google_mlkit_text_recognition
+// import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
+
+// If you have a PDF approach on mobile, import your pdf libraries
+// import 'package:pdfx/pdfx.dart';
+// import 'package:path_provider/path_provider.dart';
+// import 'dart:ui' as ui;
+// import 'dart:io';
+
+// For Tesseract.js on web, import dart:js/html
+// import 'dart:html' as html; // only works on web
 
 import '../../../core/providers/app_provider.dart';
+import '../../../core/model/document_model.dart';
+import '../../../core/service/document_service.dart';
 import '../../widgets/sidebar.dart';
-import 'ocr_preview_screen.dart';
 
 class OcrUploadScreen extends StatefulWidget {
   const OcrUploadScreen({Key? key}) : super(key: key);
@@ -22,81 +31,165 @@ class OcrUploadScreen extends StatefulWidget {
 }
 
 class _OcrUploadScreenState extends State<OcrUploadScreen> {
-  final TextRecognizer _textRecognizer = TextRecognizer();
+  // ----------------------------------------
+  // 1) OCR-Upload related fields
+  // ----------------------------------------
   bool _isProcessing = false;
+  bool _isPreviewVisible = false; // Controls whether we show the preview or the upload UI
+  String _extractedText = '';
 
+  // ----------------------------------------
+  // 2) "Preview" / Document form fields
+  // ----------------------------------------
+  final _formKey = GlobalKey<FormState>();
+  final _userNameController = TextEditingController();
+  final _matricNumberController = TextEditingController();
+  final DocumentService _documentService = DocumentService();
+
+  String _selectedLevel = '300 Level';
+  String _selectedDocType = 'Other';
+  bool _isSaving = false;
+
+  final List<String> _docTypes = [
+    'Transcript',
+    'Exam Paper',
+    'Research Paper',
+    'Letter',
+    'Other',
+  ];
+
+  @override
+  void dispose() {
+    _userNameController.dispose();
+    _matricNumberController.dispose();
+    super.dispose();
+  }
+
+  // ----------------------------------------
+  // 3) Build method: sidebar + conditional UI
+  // ----------------------------------------
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Row(
+        children: [
+          // Sidebar
+          Sidebar(
+            selectedMenu: 'Documents',
+            onMenuSelected: (String menu) {
+              // TODO: Handle navigation
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Navigate to $menu')),
+              );
+            },
+          ),
+          // Main content
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              // Show upload UI OR preview UI
+              child: _isPreviewVisible
+                  ? _buildPreviewUI(context)
+                  : _buildUploadUI(context),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ----------------------------------------
+  // 4) Upload Section (shown initially)
+  // ----------------------------------------
+  Widget _buildUploadUI(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Documents > OCR Upload',
+          style: TextStyle(color: Colors.grey[600], fontSize: 14),
+        ),
+        const SizedBox(height: 16),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.blue[100],
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Column(
+            children: [
+              const Icon(Icons.file_upload, color: Colors.blue),
+              const SizedBox(height: 8),
+              const Text(
+                'Upload File',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Select a document to extract text using OCR.\nSupported formats: PNG, JPG. (PDF not supported on web)',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.grey),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: _isProcessing ? null : _pickAndProcessFile,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue,
+                  foregroundColor: Colors.white,
+                ),
+                child: _isProcessing
+                    ? const CircularProgressIndicator(color: Colors.white)
+                    : const Text('Choose File'),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Example: pick file and do OCR
   Future<void> _pickAndProcessFile() async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
-      allowedExtensions: ['pdf', 'png', 'jpg', 'jpeg'],
+      allowedExtensions: ['png', 'jpg', 'jpeg'],
     );
 
-    if (result == null || result.files.isEmpty) return;
+    if (result == null || result.files.isEmpty) {
+      _showErrorSnackbar('No file selected.');
+      return;
+    }
 
     setState(() => _isProcessing = true);
-    try {
-      final filePath = result.files.single.path!;
-      final text = await _processFile(filePath);
 
-      Provider.of<AppState>(context, listen: false).setExtractedText(text);
-      _navigateToPreview(text);
+    try {
+      final file = result.files.single;
+      final bytes = file.bytes;
+      if (bytes == null) throw Exception('File bytes not available.');
+
+      // ----------------------------------
+      // Do your OCR logic here...
+      // For example, call a function:
+      // final recognizedText = await _performOcr(bytes, file.extension);
+      // We'll just simulate:
+      final recognizedText = 'Sample recognized text from ${file.name}';
+
+      // Save recognized text to state
+      setState(() {
+        _extractedText = recognizedText;
+        _isPreviewVisible = true; // Show preview
+      });
+
+      // Also update AppState if needed
+      final appState = Provider.of<AppState>(context, listen: false);
+      appState.setExtractedText(recognizedText);
+      appState.setDocumentType(_selectedDocType);
+
     } catch (e) {
-      _showErrorSnackbar('Error processing file: ${e.toString()}');
+      _showErrorSnackbar('Error processing file: $e');
     } finally {
       setState(() => _isProcessing = false);
     }
-  }
-
-  Future<String> _processFile(String filePath) async {
-    if (filePath.toLowerCase().endsWith('.pdf')) {
-      return _processPdf(filePath);
-    }
-    return _processImage(filePath);
-  }
-
-  Future<String> _processImage(String imagePath) async {
-    final inputImage = InputImage.fromFilePath(imagePath);
-    final visionText = await _textRecognizer.processImage(inputImage);
-    return visionText.text;
-  }
-
-  Future<String> _processPdf(String pdfPath) async {
-  if (kIsWeb) {
-    _showErrorSnackbar('PDF processing is not supported on web. Please upload an image or use a server-side solution.');
-    return '';
-  }
-  // Existing mobile-like PDF processing
-  final document = await PdfDocument.openFile(pdfPath);
-  final tempDir = await getTemporaryDirectory();
-  String fullText = '';
-
-  for (var i = 0; i < document.pageCount; i++) {
-    final page = await document.getPage(i + 1);
-    final image = await page.render(width: 1200, height: 1800);
-    final byteData = await image.imageIfAvailable!.toByteData(format: ui.ImageByteFormat.png);
-    final pngBytes = byteData?.buffer.asUint8List();
-
-    final tempFile = File('${tempDir.path}/page_$i.png');
-    await tempFile.writeAsBytes(pngBytes!);
-
-    final pageText = await _processImage(tempFile.path);
-    fullText += '$pageText\n';
-    await tempFile.delete();
-  }
-
-  await document.dispose();
-  return fullText;
-}
-
-  void _navigateToPreview(String text) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => DocumentPreviewScreen(
-          extractedText: text,
-        ),
-      ),
-    );
   }
 
   void _showErrorSnackbar(String message) {
@@ -105,163 +198,312 @@ class _OcrUploadScreenState extends State<OcrUploadScreen> {
     );
   }
 
-  @override
-  void dispose() {
-    _textRecognizer.close();
-    super.dispose();
+  // ----------------------------------------
+  // 5) Preview UI (shown after OCR completes)
+  // ----------------------------------------
+  Widget _buildPreviewUI(BuildContext context) {
+    // If you want to change breadcrumbs once in preview:
+    final breadcrumbs = 'Documents > OCR Upload > Preview';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(breadcrumbs, style: TextStyle(color: Colors.grey[600], fontSize: 14)),
+        const SizedBox(height: 20),
+        _buildDocumentPreviewSection(),
+        const SizedBox(height: 24),
+        _buildStudentDetailsForm(),
+        const Spacer(),
+        _buildAdminFooter(),
+      ],
+    );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final appState = Provider.of<AppState>(context);
-
-    return Scaffold(
-      body: Row(
-        children: [
-          Sidebar(
-            selectedMenu: 'Documents',
-            onMenuSelected: (menu) {/* Handle navigation */},
-          ),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Documents > OCR Upload',
-                    style: TextStyle(color: Colors.grey),
+  // The same logic from your old DocumentPreviewScreen:
+  Widget _buildDocumentPreviewSection() {
+    return Card(
+      elevation: 2,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.article, color: Colors.purple[700]),
+                const SizedBox(width: 8),
+                Text(
+                  'Document Preview',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.purple[800],
                   ),
-                  const SizedBox(height: 16),
-                  _buildUploadSection(),
-                  const SizedBox(height: 24),
-                  _buildTextEditorSection(appState),
-                ],
+                ),
+              ],
+            ),
+            const Divider(height: 30),
+            Text(
+              'Extracted Text',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.grey[800],
               ),
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildUploadSection() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.blue[100],
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Column(
-        children: [
-          const Icon(Icons.file_upload, color: Colors.blue),
-          const SizedBox(height: 8),
-          const Text(
-            'Upload File',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Select a document to extract text using OCR. Supported formats: PDF, PNG, JPG.',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.grey),
-          ),
-          const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: _isProcessing ? null : _pickAndProcessFile,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.blue,
-              foregroundColor: Colors.white,
+            const SizedBox(height: 8),
+            Container(
+              height: 150,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey[300]!),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: SingleChildScrollView(
+                // If you need "structured view," see below:
+                child: _buildStructuredView(_selectedDocType, _extractedText),
+              ),
             ),
-            child: _isProcessing
-                ? const CircularProgressIndicator(color: Colors.white)
-                : const Text('Choose File'),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildTextEditorSection(AppState appState) {
-    return Expanded(
+  /// Example structured view logic
+  Widget _buildStructuredView(String documentType, String text) {
+    final appState = Provider.of<AppState>(context, listen: false);
+
+    if (documentType == 'Transcript' && appState.currentTranscript != null) {
+      final transcript = appState.currentTranscript!;
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Student: ${transcript.student.name}', style: const TextStyle(fontWeight: FontWeight.bold)),
+          Text('Matric Number: ${transcript.student.matricNumber}'),
+          Text('Cumulative GPA: ${transcript.cumulativeGpa}'),
+          const Text('Courses:', style: TextStyle(fontWeight: FontWeight.bold)),
+          ...transcript.student.courses.map((course) => Text(
+            '- ${course.courseCode} (${course.description}): ${course.remarks} (${course.marksPercentage}%)',
+          )),
+        ],
+      );
+    } else if (documentType == 'Letter' && appState.currentDocument?.structuredData != null) {
+      final data = appState.currentDocument!.structuredData!;
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('From: ${data['from'] ?? 'Unknown'}', style: const TextStyle(fontWeight: FontWeight.bold)),
+          Text('To: ${data['to'] ?? 'Unknown'}'),
+          Text('Date: ${data['date'] ?? 'Unknown'}'),
+          Text('Body: ${data['body'] ?? text}'),
+        ],
+      );
+    }
+    // Fallback
+    return Text(text);
+  }
+
+  // ----------------------------------------
+  // 6) Form: Student Details
+  // ----------------------------------------
+  Widget _buildStudentDetailsForm() {
+    return Card(
+      elevation: 2,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Student Details',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.purple[800],
+                ),
+              ),
+              const Divider(height: 30),
+              _buildFormField('Student Name', 'Enter student\'s full name', _userNameController),
+              const SizedBox(height: 16),
+              _buildFormField('Matric Number', 'Enter matric number', _matricNumberController),
+              const SizedBox(height: 24),
+              _buildLevelSelector(),
+              const SizedBox(height: 24),
+              _buildDocTypeSelector(),
+              const SizedBox(height: 24),
+              _buildActionButtons(),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFormField(String label, String hint, TextEditingController controller) {
+    return TextFormField(
+      controller: controller,
+      decoration: InputDecoration(
+        labelText: label,
+        hintText: hint,
+        border: const OutlineInputBorder(),
+        suffixIcon: label.contains('Name')
+            ? const Icon(Icons.search)
+            : const Icon(Icons.camera_alt),
+      ),
+      validator: (value) => value!.isEmpty ? 'This field is required' : null,
+    );
+  }
+
+  Widget _buildLevelSelector() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('Academic Level', style: TextStyle(fontSize: 16)),
+        const SizedBox(height: 8),
+        ToggleButtons(
+          isSelected: List.generate(
+            4,
+            (i) => _selectedLevel == '${(i + 1) * 100} Level',
+          ),
+          onPressed: (index) {
+            setState(() {
+              _selectedLevel = '${(index + 1) * 100} Level';
+            });
+          },
+          children: const [
+            Padding(padding: EdgeInsets.symmetric(horizontal: 16), child: Text('100 Level')),
+            Padding(padding: EdgeInsets.symmetric(horizontal: 16), child: Text('200 Level')),
+            Padding(padding: EdgeInsets.symmetric(horizontal: 16), child: Text('300 Level')),
+            Padding(padding: EdgeInsets.symmetric(horizontal: 16), child: Text('400 Level')),
+          ],
+          color: Colors.grey,
+          selectedColor: Colors.white,
+          fillColor: Colors.purple,
+          borderRadius: BorderRadius.all(Radius.circular(8)),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDocTypeSelector() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('Document Type', style: TextStyle(fontSize: 16)),
+        const SizedBox(height: 8),
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 3,
+            childAspectRatio: 3,
+            mainAxisSpacing: 8,
+            crossAxisSpacing: 8,
+          ),
+          itemCount: _docTypes.length,
+          itemBuilder: (context, index) {
+            final docType = _docTypes[index];
+            final isSelected = _selectedDocType == docType;
+            return ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: isSelected ? Colors.purple[700] : Colors.grey[200],
+                foregroundColor: isSelected ? Colors.white : Colors.black,
+              ),
+              onPressed: () {
+                setState(() => _selectedDocType = docType);
+                Provider.of<AppState>(context, listen: false).setDocumentType(docType);
+              },
+              child: Text(docType),
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildActionButtons() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: [
+        OutlinedButton(
+          onPressed: () => Navigator.pop(context),
+          style: OutlinedButton.styleFrom(
+            side: BorderSide(color: Colors.grey[600]!),
+            padding: const EdgeInsets.symmetric(horizontal: 32),
+          ),
+          child: const Text('Cancel'),
+        ),
+        const SizedBox(width: 16),
+        ElevatedButton(
+          onPressed: _isSaving ? null : _saveDocument,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.purple[700],
+            padding: const EdgeInsets.symmetric(horizontal: 32),
+          ),
+          child: _isSaving
+              ? const CircularProgressIndicator(color: Colors.white)
+              : const Text('Save Document'),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAdminFooter() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Extracted Text',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Edit extracted text.',
-            style: TextStyle(color: Colors.grey),
-          ),
-          const SizedBox(height: 8),
-          Expanded(
-            child: TextField(
-              controller: TextEditingController(text: appState.extractedText),
-              maxLines: null,
-              expands: true,
-              decoration: const InputDecoration(
-                hintText: 'Extracted text will appear here.',
-                border: OutlineInputBorder(),
-              ),
-              onChanged: (text) => appState.setExtractedText(text),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              ElevatedButton(
-                onPressed: () =>
-                    _navigateToPreview(appState.extractedText ?? ''),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue,
-                  foregroundColor: Colors.white,
-                ),
-                child: const Text('Preview Document'),
-              ),
-              const SizedBox(width: 16),
-              OutlinedButton(
-                onPressed: () => _saveTextFile(appState.extractedText ?? ''),
-                style: OutlinedButton.styleFrom(
-                  side: BorderSide(color: Colors.blue.shade800),
-                ),
-                child: const Text('Download Text',
-                    style: TextStyle(color: Colors.blue)),
-              ),
-            ],
+          const Text('Admin User', style: TextStyle(fontWeight: FontWeight.bold)),
+          Text(
+            'System Administrator',
+            style: TextStyle(color: Colors.grey[600]),
           ),
         ],
       ),
     );
   }
 
+  // ----------------------------------------
+  // 7) Saving Document
+  // ----------------------------------------
+  Future<void> _saveDocument() async {
+    if (!_formKey.currentState!.validate()) return;
 
+    setState(() => _isSaving = true);
 
-Future<void> _saveTextFile(String text) async {
-  if (kIsWeb) {
-    final blob = html.Blob([text], 'text/plain', 'native');
-    final url = html.Url.createObjectUrlFromBlob(blob);
-    final anchor = html.AnchorElement(href: url)
-      ..setAttribute('download', 'extracted_text_${DateTime.now().millisecondsSinceEpoch}.txt')
-      ..click();
-    html.Url.revokeObjectUrl(url);
-    _showSuccessSnackbar('Text saved for download');
-  } else {
-    final directory = await getDownloadsDirectory();
-    if (directory == null) return;
+    try {
+      final document = DocumentModel(
+        id: '',
+        userName: _userNameController.text,
+        matricNumber: _matricNumberController.text,
+        level: _selectedLevel.replaceAll(' Level', ''), // "300 Level" -> "300"
+        text: _extractedText,
+        documentType: _selectedDocType,
+        fileUrl: '',
+        timestamp: DateTime.now(),
+      );
 
-    final file = File('${directory.path}/extracted_text_${DateTime.now().millisecondsSinceEpoch}.txt');
-    await file.writeAsString(text);
-    _showSuccessSnackbar('Text saved to Downloads');
-  }
-}
+      // Save to Firestore
+      await _documentService.saveDocument(document);
 
-  void _showSuccessSnackbar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: Colors.green),
-    );
+      // Update AppState
+      Provider.of<AppState>(context, listen: false).setCurrentDocument(document);
+
+      // Close or navigate away
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Document saved successfully')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e')),
+      );
+    } finally {
+      setState(() => _isSaving = false);
+    }
   }
 }

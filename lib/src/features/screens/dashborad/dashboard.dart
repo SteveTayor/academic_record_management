@@ -1,20 +1,19 @@
-import 'package:archival_system/src/features/screens/other_screens/ocr_screen.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
 import '../../../core/model/document_model.dart';
 import '../../../core/service/document_service.dart';
 import '../../widgets/dashboard_card.dart';
+import '../../widgets/sidebar.dart';
+import '../other_screens/ocr_screen.dart';
 
 class DashboardPage extends StatefulWidget {
-  const DashboardPage({super.key});
+  const DashboardPage({Key? key}) : super(key: key);
 
   @override
   State<DashboardPage> createState() => _DashboardPageState();
 }
 
 class _DashboardPageState extends State<DashboardPage> {
-  // Color constants
   static const Color lightPurple = Color(0xFFE6E6FA);
   static const Color white = Colors.white;
   static const Color blue = Colors.blue;
@@ -25,6 +24,7 @@ class _DashboardPageState extends State<DashboardPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // Optional: keep an app bar or remove it if you want a full-screen approach
       appBar: AppBar(
         title: const Text('Dashboard Overview'),
         centerTitle: true,
@@ -32,101 +32,53 @@ class _DashboardPageState extends State<DashboardPage> {
         foregroundColor: black,
         elevation: 0,
       ),
-      drawer: _buildDrawer(),
       backgroundColor: white,
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildDashboardMetrics(context),
-              const SizedBox(height: 24),
-              Center(child: _buildQuickActions()),
-              const SizedBox(height: 24),
-              _buildRecentDocumentAccess(context),
-            ],
+      body: Row(
+        children: [
+          // 1) The Sidebar
+          Sidebar(
+            selectedMenu: 'Overview', // This page is "Overview"
+            onMenuSelected: _onSidebarMenuSelected,
           ),
-        ),
-      ),
-    );
-  }
-
-  // Sidebar navigation menu
-  Widget _buildDrawer() {
-    return Drawer(
-      child: Container(
-        color: lightPurple,
-        child: Column(
-          children: [
-            const Padding(
-              padding: EdgeInsets.fromLTRB(16, 32, 16, 16),
-              child: Row(
-                children: [
-                  Text(
-                    'UniVault',
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: black,
-                    ),
-                  ),
-                  Spacer(),
-                  Icon(Icons.add, color: black),
-                ],
-              ),
-            ),
-            ListTile(
-              leading: const Icon(Icons.dashboard, color: black),
-              title: const Text('Dashboard', style: TextStyle(color: black)),
-              selected: true,
-              selectedTileColor: Colors.deepPurple.shade100,
-              onTap: () => Navigator.pop(context),
-            ),
-            ListTile(
-              leading: const Icon(Icons.folder, color: black),
-              title: const Text('Documents', style: TextStyle(color: black)),
-              onTap: () => Navigator.pop(context), // Placeholder navigation
-            ),
-            ListTile(
-              leading: const Icon(Icons.people, color: black),
-              title: const Text('Users', style: TextStyle(color: black)),
-              onTap: () => Navigator.pop(context), // Placeholder navigation
-            ),
-            const Spacer(),
-            Padding(
+          // 2) Main content area
+          Expanded(
+            child: SingleChildScrollView(
               padding: const EdgeInsets.all(16.0),
-              child: Row(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const CircleAvatar(
-                    radius: 20,
-                    child: Icon(Icons.person, size: 24),
-                  ),
-                  const SizedBox(width: 12),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Admin User',
-                        style: TextStyle(
-                            fontWeight: FontWeight.bold, color: black),
-                      ),
-                      Text(
-                        'System Administrator',
-                        style: TextStyle(color: Colors.grey.shade700),
-                      ),
-                    ],
-                  ),
+                  _buildDashboardMetrics(context),
+                  const SizedBox(height: 24),
+                  Center(child: _buildQuickActions()),
+                  const SizedBox(height: 24),
+                  _buildRecentDocumentAccess(context),
                 ],
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
-  // Dashboard metrics section (dynamic data from Firestore)
+  /// Handle sidebar navigation
+  void _onSidebarMenuSelected(String menu) {
+    if (menu == 'Overview') {
+      // Already on the dashboard, do nothing or pop
+    } else if (menu == 'Documents') {
+      // TODO: Navigate to a Documents page or screen
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Navigate to Documents screen')),
+      );
+    } else if (menu == 'Users') {
+      // TODO: Navigate to a Users page or screen
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Navigate to Users screen')),
+      );
+    }
+  }
+
+  /// Dashboard metrics (uses Firestore to fetch data)
   Widget _buildDashboardMetrics(BuildContext context) {
     return FutureBuilder<Map<String, dynamic>>(
       future: _fetchDashboardMetrics(),
@@ -176,17 +128,15 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  // Quick actions section
+  /// Quick actions section
   Widget _buildQuickActions() {
     return ElevatedButton(
       onPressed: () {
-        // Placeholder for upload action (navigate to OCR upload screen)
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Upload New Document clicked')),
+        // Example: navigate to OCR upload screen
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const OcrUploadScreen()),
         );
-        Navigator.push(context, MaterialPageRoute(builder: (context) {
-          return OcrUploadScreen();
-        }));
       },
       style: ElevatedButton.styleFrom(
         backgroundColor: blue,
@@ -198,7 +148,7 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  // Recent document access table (dynamic data from Firestore)
+  /// Recent documents table
   Widget _buildRecentDocumentAccess(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -206,7 +156,10 @@ class _DashboardPageState extends State<DashboardPage> {
         const Text(
           'Recent Document Access',
           style: TextStyle(
-              fontSize: 18, fontWeight: FontWeight.bold, color: black),
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: black,
+          ),
         ),
         const SizedBox(height: 8),
         FutureBuilder<List<DocumentModel>>(
@@ -229,20 +182,28 @@ class _DashboardPageState extends State<DashboardPage> {
                 columnSpacing: 24,
                 columns: const [
                   DataColumn(
-                    label: Text('Document',
-                        style: TextStyle(fontWeight: FontWeight.bold)),
+                    label: Text(
+                      'Document',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
                   ),
                   DataColumn(
-                    label: Text('User',
-                        style: TextStyle(fontWeight: FontWeight.bold)),
+                    label: Text(
+                      'User',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
                   ),
                   DataColumn(
-                    label: Text('Action',
-                        style: TextStyle(fontWeight: FontWeight.bold)),
+                    label: Text(
+                      'Action',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
                   ),
                   DataColumn(
-                    label: Text('Timestamp',
-                        style: TextStyle(fontWeight: FontWeight.bold)),
+                    label: Text(
+                      'Timestamp',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
                   ),
                   DataColumn(label: Text('')), // For three-dot menu
                 ],
@@ -254,17 +215,21 @@ class _DashboardPageState extends State<DashboardPage> {
                     DataCell(Text(doc.userName)),
                     const DataCell(Text('View')),
                     DataCell(Text(_formatTimestamp(doc.timestamp))),
-                    DataCell(IconButton(
-                      icon: const Icon(Icons.more_vert),
-                      onPressed: () {
-                        // Placeholder for menu action
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
+                    DataCell(
+                      IconButton(
+                        icon: const Icon(Icons.more_vert),
+                        onPressed: () {
+                          // Placeholder for menu action
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
                               content: Text(
-                                  'More options for ${doc.documentType} clicked')),
-                        );
-                      },
-                    )),
+                                'More options for ${doc.documentType} clicked',
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
                   ]);
                 }).toList(),
               ),
@@ -275,23 +240,19 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  // Helper method to fetch dashboard metrics from Firestore
+  /// Fetch dashboard metrics
   Future<Map<String, dynamic>> _fetchDashboardMetrics() async {
     try {
-      // Fetch total documents (sum of totalDocuments for all students)
       final querySnapshot =
           await _documentService.firestore.collection('univault').get();
       int totalDocuments = 0;
-      int recentRetrievals = 0; // Placeholder for recent retrievals logic
 
       for (var doc in querySnapshot.docs) {
         final data = doc.data();
         totalDocuments += (data['totalDocuments'] as int? ?? 0);
       }
-
-      // Simulate recent retrievals (replace with actual logic if available in Firestore)
-      // For now, assume recent retrievals are 10% of total documents
-      recentRetrievals = (totalDocuments * 0.1).round();
+      // Fake recent retrievals = 10% of total
+      final recentRetrievals = (totalDocuments * 0.1).round();
 
       return {
         'totalDocuments': totalDocuments,
@@ -302,26 +263,24 @@ class _DashboardPageState extends State<DashboardPage> {
     }
   }
 
-  // Helper method to fetch recent documents from Firestore
+  /// Fetch 3 most recent documents from Firestore
   Future<List<DocumentModel>> _fetchRecentDocuments() async {
     try {
-      // Fetch the 3 most recent documents across all students (ordered by timestamp)
       final querySnapshot = await _documentService.firestore
           .collectionGroup('documents')
           .orderBy('timestamp', descending: true)
           .limit(3)
           .get();
 
-      return querySnapshot.docs
-          .map((doc) =>
-              DocumentModel.fromMap(doc.id, doc.data() as Map<String, dynamic>))
-          .toList();
+      return querySnapshot.docs.map((doc) {
+        return DocumentModel.fromMap(doc.id, doc.data());
+      }).toList();
     } catch (e) {
       throw Exception('Error fetching recent documents: $e');
     }
   }
 
-  // Helper method to format timestamp for display
+  /// Format timestamp
   String _formatTimestamp(DateTime timestamp) {
     final now = DateTime.now();
     final difference = now.difference(timestamp);
