@@ -5,6 +5,7 @@ import '../../../core/model/document_model.dart';
 import '../../../core/service/document_service.dart';
 import '../../widgets/dashboard_card.dart';
 import '../../widgets/sidebar.dart';
+import '../other_screens/dcuments/document_screen.dart';
 import '../other_screens/document_view_screen.dart';
 import '../other_screens/ocr_screen.dart';
 
@@ -47,10 +48,10 @@ class _DashboardPageState extends State<DashboardPage> {
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(16.0),
               child: Column(
-mainAxisAlignment: MainAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.start,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  SizedBox(height:20),
+                  SizedBox(height: 20),
                   const Text(
                     'Dashboard Overview',
                     style: TextStyle(
@@ -89,13 +90,13 @@ mainAxisAlignment: MainAxisAlignment.start,
       );
     } else if (menu == 'Users') {
       // TODO: Navigate to a Users page or screen
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => UserFolderScreen()),
-      );
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Navigate to Users screen')),
-      );
+      // Navigator.push(
+      //   context,
+      //   MaterialPageRoute(builder: (_) => UserFolderScreen()),
+      // );
+      // ScaffoldMessenger.of(context).showSnackBar(
+      //   const SnackBar(content: Text('Navigate to Users screen')),
+      // );
     }
   }
 

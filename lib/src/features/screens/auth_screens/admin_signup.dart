@@ -583,7 +583,19 @@ class _AdminRegistrationPageState extends State<AdminRegistrationPage> {
   Widget _buildOtpVerificationUI() {
     return Column(
       mainAxisSize: MainAxisSize.min,
+      spacing: 10,
       children: [
+        SizedBox(height: 10),
+        const Text(
+          'Verify Otp.',
+          style: TextStyle(
+            fontSize: 30,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        SizedBox(
+          height: 15,
+        ),
         const Text('Enter the OTP sent to your email:'),
         TextField(
           controller: _otpController,
@@ -601,6 +613,28 @@ class _AdminRegistrationPageState extends State<AdminRegistrationPage> {
               border: InputBorder.none,
               hintText: 'OTP'),
         ),
+        Center(
+          child: RichText(
+            text: TextSpan(
+              text: 'Didn\'t receive any code? ',
+              style: const TextStyle(color: Colors.black),
+              children: [
+                TextSpan(
+                  text: 'Resend',
+                  style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.blue.shade600,
+                      fontWeight: FontWeight.w500),
+                  recognizer: TapGestureRecognizer()
+                    ..onTap = _isResendOtpLoadin ? null : _resendOtp,
+                ),
+              ],
+            ),
+          ),
+        ),
+        SizedBox(
+          height: 8,
+        ),
         ElevatedButton(
           style: ButtonStyle(
             backgroundColor: WidgetStatePropertyAll(Colors.blue.shade800),
@@ -614,19 +648,19 @@ class _AdminRegistrationPageState extends State<AdminRegistrationPage> {
               ? const CircularProgressIndicator()
               : const Text('Verify OTP'),
         ),
-        ElevatedButton(
-          style: ButtonStyle(
-            backgroundColor: WidgetStatePropertyAll(Colors.blue.shade800),
-            padding: WidgetStatePropertyAll(
-                EdgeInsets.symmetric(horizontal: 20, vertical: 10)),
-            shape: WidgetStatePropertyAll(RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(15))),
-          ),
-          onPressed: _isResendOtpLoadin ? null : _resendOtp,
-          child: _isResendOtpLoadin
-              ? const CircularProgressIndicator()
-              : const Text('Resend OTP'),
-        ),
+        // ElevatedButton(
+        //   style: ButtonStyle(
+        //     backgroundColor: WidgetStatePropertyAll(Colors.blue.shade800),
+        //     padding: WidgetStatePropertyAll(
+        //         EdgeInsets.symmetric(horizontal: 20, vertical: 10)),
+        //     shape: WidgetStatePropertyAll(RoundedRectangleBorder(
+        //         borderRadius: BorderRadius.circular(15))),
+        //   ),
+        //   onPressed: _isResendOtpLoadin ? null : _resendOtp,
+        //   child: _isResendOtpLoadin
+        //       ? const CircularProgressIndicator()
+        //       : const Text('Resend OTP'),
+        // ),
         Text(_message,
             style: const TextStyle(color: Colors.teal, fontSize: 16)),
       ],
@@ -892,11 +926,11 @@ class _AdminRegistrationPageState extends State<AdminRegistrationPage> {
       final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
         // Reset OTP verification status
-      await FirebaseFirestore.instance
-          .collection('admins')
-          .doc(user.uid)
-          .update({'otpVerified': false});
-          
+        await FirebaseFirestore.instance
+            .collection('admins')
+            .doc(user.uid)
+            .update({'otpVerified': false});
+
         final otp = _authService.generateOtp();
         await _authService.storeOtp(user.uid, otp);
         await _authService.sendOtpEmail(user.email!, otp);

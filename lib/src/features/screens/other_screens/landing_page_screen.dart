@@ -29,6 +29,20 @@ class LandingPage extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
+          Row(
+            children: [
+              SizedBox(width: 10),
+             Image.asset(
+                        'assets/images/university-of-ibadan-logo-transparent.png',
+                        height: 50,
+                        width: 50,
+                        fit: BoxFit.fitHeight,
+                      )
+              // _navButton('Features'),
+              // _navButton('About'),
+              // _navButton('Contact'),
+            ],
+          ),
           Text('UniVault',
               style: GoogleFonts.poppins(
                 fontSize: 24,

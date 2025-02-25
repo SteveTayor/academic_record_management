@@ -13,46 +13,56 @@ class Sidebar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 200,
-      color: Colors.blue[800],
+      width: MediaQuery.of(context).size.width * 0.15,
+      color: Colors.blueGrey[50],
       child: Column(
         children: [
           // Top Section (Logo or App Title)
-          const Padding(
-            padding: EdgeInsets.all(16.0),
+          Padding(
+            padding: const EdgeInsets.all(16.0),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              mainAxisAlignment: MainAxisAlignment.start,
+              spacing: 10,
               children: [
+                Image.asset(
+                  'assets/images/university-of-ibadan-logo-transparent.png',
+                  height: 40,
+                  width: 80,
+                  fit: BoxFit.contain,
+                ),
+
                 Text(
                   'UniVault',
                   style: TextStyle(
-                    fontSize: 18,
+                    fontSize: 22,
                     fontWeight: FontWeight.bold,
-                    color: Colors.black,
+                    color: Colors.blue[800],
                   ),
                 ),
-                Icon(Icons.add, color: Colors.black),
+                // Icon(Icons.add, color: Colors.white),
               ],
             ),
           ),
           // Menu Items
-          _buildMenuItem('Overview', Icons.grid_view, selectedMenu == 'Overview'),
-          _buildMenuItem('Documents', Icons.folder, selectedMenu == 'Documents'),
-          _buildMenuItem('Users', Icons.person, selectedMenu == 'Users'),
+          _buildMenuItem(
+              'Overview', Icons.grid_view, selectedMenu == 'Overview'),
+          _buildMenuItem(
+              'Documents', Icons.folder, selectedMenu == 'Documents'),
+          // _buildMenuItem('Users', Icons.person, selectedMenu == 'Users'),
 
           // Spacer pushes user info to bottom if desired
           const Spacer(),
 
           // Bottom user info
-          const Padding(
-            padding: EdgeInsets.all(16.0),
+          Padding(
+            padding: const EdgeInsets.all(16.0),
             child: Row(
               children: [
-                CircleAvatar(
+                const CircleAvatar(
                   radius: 20,
                   child: Icon(Icons.person, size: 24),
                 ),
-                SizedBox(width: 12),
+                const SizedBox(width: 12),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -60,10 +70,10 @@ class Sidebar extends StatelessWidget {
                       'Admin User',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
-                        color: Colors.black,
+                        color: Colors.blue[800],
                       ),
                     ),
-                    Text(
+                    const Text(
                       'System Administrator',
                       style: TextStyle(color: Colors.grey),
                     ),
@@ -78,18 +88,32 @@ class Sidebar extends StatelessWidget {
   }
 
   Widget _buildMenuItem(String title, IconData icon, bool isSelected) {
-    return ListTile(
-      leading: Icon(icon, color: isSelected ? Colors.blue[700] : Colors.black),
-      title: Text(
-        title,
-        style: TextStyle(
-          color: isSelected ? Colors.blue[700] : Colors.black,
-          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: isSelected ? Colors.blue[800] : null,
+          borderRadius: BorderRadius.circular(15),
+        ),
+        child: ListTile(
+          leading: Icon(icon,
+              color: isSelected ? Colors.lightBlue[50] : Colors.black),
+          title: Text(
+            title,
+            style: TextStyle(
+              color: isSelected ? Colors.white : Colors.black,
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+            ),
+          ),
+          onTap: () {
+            onMenuSelected(title);
+            isSelected = !isSelected;
+          },
+          selected: isSelected,
+          selectedColor: Colors.blue[800],
+          selectedTileColor: Colors.blue[800],
         ),
       ),
-      onTap: () => onMenuSelected(title),
-      selected: isSelected,
-      selectedTileColor: Colors.blue[200],
     );
   }
 }

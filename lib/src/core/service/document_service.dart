@@ -35,6 +35,43 @@ class DocumentService {
     }
   }
 
+  Future<List<Map<String, String>>> fetchAllUsers() async {
+    try {
+      final querySnapshot = await _firestore.collection('univault').get();
+      return querySnapshot.docs
+          .map((doc) {
+            final data = doc.data();
+            return {
+              'name': data['userName']?.toString() ?? 'Unknown',
+              'matricNumber': doc.id.replaceFirst('student_', ''),
+            };
+          })
+          .toList()
+          .cast<Map<String, String>>();
+    } catch (e) {
+      throw Exception("Error fetching users: $e");
+    }
+  }
+
+  Future<List<DocumentModel>> fetchDocumentsByUser(String matricNumber) async {
+    try {
+      final userDoc =
+          _firestore.collection('univault').doc('student_$matricNumber');
+      final levelsSnapshot = await userDoc.collection('levels').get();
+
+      List<DocumentModel> allDocuments = [];
+      for (var levelDoc in levelsSnapshot.docs) {
+        final docsSnapshot =
+            await levelDoc.reference.collection('documents').get();
+        allDocuments.addAll(docsSnapshot.docs
+            .map((doc) => DocumentModel.fromMap(doc.id, doc.data())));
+      }
+      return allDocuments;
+    } catch (e) {
+      throw Exception("Error fetching user documents: $e");
+    }
+  }
+
   /// Parse transcript text into structured data
   Map<String, dynamic> _parseTranscript(String text) {
     final lines = text.split('\n');

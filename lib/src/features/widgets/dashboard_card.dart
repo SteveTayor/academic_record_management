@@ -19,9 +19,9 @@ class DashboardCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 200, // Fixed width for consistency, adjusts via Wrap
+      width: MediaQuery.of(context).size.width * 0.18,
       child: Card(
-        color: const Color(0xFFE6E6FA), // Light purple background
+        color: Colors.blueGrey[50], // Light purple background
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         elevation: 2,
         child: Padding(
@@ -29,7 +29,7 @@ class DashboardCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(icon, color: Colors.deepPurple, size: 32),
+              Icon(icon, color: Colors.blue[800], size: 32),
               const SizedBox(height: 8),
               Text(
                 title,
@@ -45,21 +45,21 @@ class DashboardCard extends StatelessWidget {
                 style: const TextStyle(fontSize: 14, color: Colors.grey),
               ),
               const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: onPressed,
-                // onPressed: () {
-                //   // Placeholder for button action
-                //   ScaffoldMessenger.of(context).showSnackBar(
-                //     SnackBar(content: Text('$buttonText clicked')),
-                //   );
-                // },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.deepPurple,
-                  foregroundColor: Colors.white,
-                  minimumSize: const Size(double.infinity, 36),
-                ),
-                child: Text(buttonText),
-              ),
+              // ElevatedButton(
+              //   onPressed: onPressed,
+              //   // onPressed: () {
+              //   //   // Placeholder for button action
+              //   //   ScaffoldMessenger.of(context).showSnackBar(
+              //   //     SnackBar(content: Text('$buttonText clicked')),
+              //   //   );
+              //   // },
+              //   style: ElevatedButton.styleFrom(
+              //     backgroundColor: Colors.blue[800],
+              //     foregroundColor: Colors.white,
+              //     minimumSize: const Size(double.infinity, 36),
+              //   ),
+              //   child: Text(buttonText),
+              // ),
             ],
           ),
         ),
