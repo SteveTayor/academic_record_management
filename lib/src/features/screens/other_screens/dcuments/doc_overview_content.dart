@@ -12,25 +12,27 @@ class OverviewContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(24.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Documents > Overview',
-            style: TextStyle(color: Colors.grey, fontSize: 14),
-          ),
-          const SizedBox(height: 16),
-          _buildHeaderCards(),
-          const SizedBox(height: 24),
-          _buildRecentDocumentsTable(),
-        ],
+    return Scaffold(
+      body: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Documents > Overview',
+              style: TextStyle(color: Colors.grey, fontSize: 14),
+            ),
+            const SizedBox(height: 16),
+            _buildHeaderCards(context),
+            const SizedBox(height: 24),
+            _buildRecentDocumentsTable(context),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildHeaderCards() {
+  Widget _buildHeaderCards(BuildContext context) {
     return Row(
       children: [
         Expanded(
@@ -41,6 +43,7 @@ class OverviewContent extends StatelessWidget {
                 'Convert scanned documents into searchable text using OCR technology',
             buttonText: 'Process Documents',
             onPressed: onOcrUploadPressed,
+            context: context,
           ),
         ),
         const SizedBox(width: 16),
@@ -52,6 +55,7 @@ class OverviewContent extends StatelessWidget {
                 'Search through processed documents using keywords and filters',
             buttonText: 'Search Documents',
             onPressed: onSearchPressed,
+            context: context,
           ),
         ),
       ],
@@ -64,11 +68,13 @@ class OverviewContent extends StatelessWidget {
     required String description,
     required String buttonText,
     required VoidCallback onPressed,
+    required BuildContext context,
   }) {
     return Container(
+      width: MediaQuery.of(context).size.width * 0.25,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.blue[50],
+        color: Colors.blueGrey[50],
         borderRadius: BorderRadius.circular(8),
       ),
       child: Column(
@@ -85,6 +91,12 @@ class OverviewContent extends StatelessWidget {
           const SizedBox(height: 16),
           ElevatedButton(
             onPressed: onPressed,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.blue[800],
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+              textStyle: const TextStyle(fontSize: 16),
+            ),
             child: Text(buttonText),
           ),
         ],
@@ -92,7 +104,7 @@ class OverviewContent extends StatelessWidget {
     );
   }
 
-  Widget _buildRecentDocumentsTable() {
+  Widget _buildRecentDocumentsTable(BuildContext context) {
     final documents = [
       {
         'fileName': 'Invoice.pdf',
@@ -125,6 +137,7 @@ class OverviewContent extends StatelessWidget {
           const SizedBox(height: 16),
           Expanded(
             child: Container(
+              width: MediaQuery.of(context).size.width,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(8),
                 color: Colors.white,

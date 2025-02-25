@@ -71,7 +71,7 @@ class _OcrUploadContentState extends State<OcrUploadContent> {
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.blue[100],
+            color: Colors.blueGrey[50],
             borderRadius: BorderRadius.circular(8),
           ),
           child: Column(
@@ -92,8 +92,11 @@ class _OcrUploadContentState extends State<OcrUploadContent> {
               ElevatedButton(
                 onPressed: _isProcessing ? null : _pickAndProcessFile,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue,
+                  backgroundColor: Colors.blue[800],
                   foregroundColor: Colors.white,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                  textStyle: const TextStyle(fontSize: 16),
                 ),
                 child: _isProcessing
                     ? const CircularProgressIndicator(color: Colors.white)
