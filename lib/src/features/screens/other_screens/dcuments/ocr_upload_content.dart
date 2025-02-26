@@ -9,7 +9,7 @@ import 'package:path_provider/path_provider.dart';
 import '../../../../core/model/document_model.dart';
 import '../../../../core/providers/app_provider.dart';
 import '../../../../core/service/document_service.dart';
-import 'dart:js' as js;
+// import 'dart:js' as js;
 import 'dart:js_util' as js_util;
 import 'dart:typed_data';
 
@@ -127,7 +127,7 @@ class _OcrUploadContentState extends State<OcrUploadContent> {
   Future<void> _pickAndProcessFile() async {
     final pickResult = await FilePicker.platform.pickFiles(
       type: FileType.custom,
-      allowedExtensions: ['png', 'jpg', 'jpeg'],
+      allowedExtensions: ['png', 'jpg', 'jpeg', 'pdf'],
     );
 
     if (pickResult == null || pickResult.files.isEmpty) {
@@ -212,34 +212,45 @@ class _OcrUploadContentState extends State<OcrUploadContent> {
     }
   }
 
+// Web-specific OCR implementation using the predefined JavaScript function
   Future<String> _performWebOCR(Uint8List bytes) async {
-    // Convert the image bytes to a base64 string
-    final base64Image = base64Encode(bytes);
-    final base64Uri = 'data:image/png;base64,$base64Image';
+    try {
+      // Convert the image bytes to a base64 string
+      final base64Image = base64Encode(bytes);
+      final base64Uri = 'data:image/png;base64,$base64Image';
 
-    // Create a map of OCR parameters to pass to JavaScript
-    final Map<String, dynamic> ocrParams = {
-      'language': 'eng',
-      'args': {'psm': '4', 'preserve_interword_spaces': '1'}
-    };
+      // Create a map of OCR parameters with null safety
+      final Map<String, dynamic> ocrParams = {
+        'language': 'eng',
+        'args': {'psm': '4', 'preserve_interword_spaces': '1'}
+      };
 
-    // Create a completer to handle the async JavaScript call
-    final completer = Completer<String>();
+      // Use js_util for better JavaScript interoperability
+      // Check if the function exists
+      final extractTextFn = js_util.hasProperty(html.window, '_extractText')
+          ? js_util.getProperty(html.window, '_extractText')
+          : null;
 
-    // Call the JavaScript function and handle the promise
-    final promise = js_util.callMethod(
-        html.window, '_extractText', [base64Uri, js_util.jsify(ocrParams)]);
+      if (extractTextFn == null) {
+        throw Exception(
+            '_extractText function not found in window object. Make sure it is defined in your HTML file.');
+      }
 
-    // Handle the promise resolution
-    promise.callMethod('then',
-        [js.allowInterop((result) => completer.complete(result.toString()))]);
+      // Call the function and convert the JavaScript Promise to a Dart Future
+      final jsResult = await js_util.promiseToFuture<dynamic>(js_util
+          .callMethod(html.window, '_extractText',
+              [base64Uri, js_util.jsify(ocrParams)]));
 
-    // Handle any errors
-    promise.callMethod('catch', [
-      js.allowInterop((error) => completer.completeError(error.toString()))
-    ]);
+      // Ensure we have a valid result
+      if (jsResult == null) {
+        throw Exception('OCR returned null result');
+      }
 
-    return completer.future;
+      return jsResult.toString();
+    } catch (e) {
+      print('Error in _performWebOCR: $e');
+      rethrow;
+    }
   }
 
 // Helper for mobile platforms to save bytes to a temporary file
