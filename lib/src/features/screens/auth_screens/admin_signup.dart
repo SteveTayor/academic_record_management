@@ -1572,6 +1572,8 @@ class _AdminRegistrationPageState extends State<AdminRegistrationPage>
         return 'Good';
       case 4:
         return 'Strong';
+      case 5:
+        return 'Godlike';
       default:
         return '';
     }
@@ -1924,29 +1926,83 @@ class _AdminRegistrationPageState extends State<AdminRegistrationPage>
             'Your account is verified!\nRegistration complete.',
             textAlign: TextAlign.center,
             style: TextStyle(
-                fontSize: 20, color: Colors.green, fontWeight: FontWeight.bold),
+                fontSize: 20, color: Colors.green, fontWeight: FontWeight.w600),
           ),
         ),
         const SizedBox(height: 25),
-        Animate(
-          effects: [FadeEffect(duration: 500.ms, delay: 200.ms)],
-          child: ElevatedButton(
-            style: ButtonStyle(
-              backgroundColor: MaterialStateProperty.all(Colors.blue.shade800),
-              padding: MaterialStateProperty.all(
-                  const EdgeInsets.symmetric(horizontal: 20, vertical: 10)),
-              shape: MaterialStateProperty.all(RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(15))),
-            ),
-            onPressed: () {
-              Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => const DashboardPage()));
-            },
-            child: const Text('Go to Dashboard'),
+
+        Padding(
+          padding: const EdgeInsets.only(top: 20.0, bottom: 15.0),
+          child: Animate(
+            effects: [FadeEffect(duration: 500.ms, delay: 200.ms)],
+            child: Container(
+              width: double.infinity,
+              height: 50,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(15),
+                color: Colors.blue.shade800,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.blue.withOpacity(0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(15),
+                  onTap: () {
+                    HapticFeedback.mediumImpact();
+                    Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => const DashboardPage()));
+                  },
+                  child: Center(
+                    child: _isSignUpLoading
+                        ? const CircularProgressIndicator(
+                            valueColor:
+                                AlwaysStoppedAnimation<Color>(Colors.white),
+                          )
+                        : const Text(
+                            'Go to Dashboard',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 18,
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                  ),
+                ),
+              ),
+            )
+                .animate(
+                    onPlay: (controller) => controller.repeat(reverse: true))
+                .scaleXY(begin: 1, end: 1.02, duration: 2000.ms),
           ),
         ),
+        // Animate(
+        //   effects: [FadeEffect(duration: 500.ms, delay: 200.ms)],
+        //   child: ElevatedButton(
+        //     style: ButtonStyle(
+        //       backgroundColor: MaterialStateProperty.all(Colors.blue.shade800),
+        //       padding: MaterialStateProperty.all(
+        //           const EdgeInsets.symmetric(horizontal: 20, vertical: 10)),
+        //       shape: MaterialStateProperty.all(RoundedRectangleBorder(
+        //           borderRadius: BorderRadius.circular(15))),
+        //     ),
+        //     onPressed: () {
+        //       Navigator.pushReplacement(
+        //           context,
+        //           MaterialPageRoute(
+        //               builder: (context) => const DashboardPage()));
+        //     },
+        //     child: const Text('Go to Dashboard'),
+        //   ),
+        // ),
       ],
     );
   }
@@ -1969,7 +2025,7 @@ class _AdminRegistrationPageState extends State<AdminRegistrationPage>
     try {
       if (_selectedMethod == VerificationMethod.email) {
         // Create user with email verification.
-        await _authService.createUserWithEmailVerification(
+        final user = await _authService.createUserWithEmailVerification(
           fullName: fullName,
           email: email,
           password: password,
@@ -1980,6 +2036,10 @@ class _AdminRegistrationPageState extends State<AdminRegistrationPage>
           _message =
               'Sign-up successful. Check your email for a verification link.';
         });
+
+        final otp = _authService.generateOtp();
+        await _authService.storeOtp(user!.uid, otp);
+        await _authService.sendOtpEmail(user.email!, otp);
       } else {
         // If you decide to implement phone verification later.
       }

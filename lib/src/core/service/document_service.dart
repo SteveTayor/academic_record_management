@@ -71,6 +71,94 @@ class DocumentService {
       throw Exception("Error fetching user documents: $e");
     }
   }
+  
+  Future<List<DocumentModel>> fetchRecentDocuments({int limit = 3}) async {
+    try {
+      // First try with the collectionGroup query that requires an index
+      try {
+        final querySnapshot = await _firestore
+            .collectionGroup('documents')
+            .orderBy('timestamp', descending: true)
+            .limit(limit)
+            .get();
+            
+        return querySnapshot.docs
+            .map((doc) => DocumentModel.fromMap(doc.id, doc.data()))
+            .toList();
+      } catch (e) {
+        // If the index doesn't exist, use a fallback approach
+        if (e.toString().contains('failed-precondition') || 
+            e.toString().contains('requires an index')) {
+          // Fallback: Get recent documents without ordering
+          final querySnapshot = await _firestore
+              .collectionGroup('documents')
+              .limit(limit * 3) // Get more documents since we can't order them
+              .get();
+              
+          final docs = querySnapshot.docs
+              .map((doc) => DocumentModel.fromMap(doc.id, doc.data()))
+              .toList();
+              
+          // Sort them in memory (not as efficient, but works without index)
+          docs.sort((a, b) {
+            final aTime = a.timestamp ?? DateTime.now();
+            final bTime = b.timestamp ?? DateTime.now();
+            return bTime.compareTo(aTime); // Descending order
+          });
+          
+          // Return only the number requested
+          return docs.take(limit).toList();
+        } else {
+          // For other errors, rethrow
+          rethrow;
+        }
+      }
+    } catch (e) {
+      throw Exception('Error fetching recent documents: $e');
+    }
+  }
+  
+  // Helper method to suggest index creation
+  String getIndexCreationUrl() {
+    return 'https://console.firebase.google.com/v1/r/project/academic-archival-system/firestore/indexes?create_exemption=CmRwcm9qZWN0cy9hY2FkZW1pYy1hcmNoaXZhbC1zeXN0ZW0vZGF0YWJhc2VzLyhkZWZhdWx0KS9jb2xsZWN0aW9uR3JvdXBzL2RvY3VtZW50cy9maWVsZHMvdGltZXN0YW1wEAIaCAoEdGltZQ';
+  }
+
+  // Future<List<Map<String, String>>> fetchAllUsers() async {
+  //   try {
+  //     final querySnapshot = await _firestore.collection('univault').get();
+  //     return querySnapshot.docs
+  //         .map((doc) {
+  //           final data = doc.data();
+  //           return {
+  //             'name': data['userName']?.toString() ?? 'Unknown',
+  //             'matricNumber': doc.id.replaceFirst('student_', ''),
+  //           };
+  //         })
+  //         .toList()
+  //         .cast<Map<String, String>>();
+  //   } catch (e) {
+  //     throw Exception("Error fetching users: $e");
+  //   }
+  // }
+
+  // Future<List<DocumentModel>> fetchDocumentsByUser(String matricNumber) async {
+  //   try {
+  //     final userDoc =
+  //         _firestore.collection('univault').doc('student_$matricNumber');
+  //     final levelsSnapshot = await userDoc.collection('levels').get();
+
+  //     List<DocumentModel> allDocuments = [];
+  //     for (var levelDoc in levelsSnapshot.docs) {
+  //       final docsSnapshot =
+  //           await levelDoc.reference.collection('documents').get();
+  //       allDocuments.addAll(docsSnapshot.docs
+  //           .map((doc) => DocumentModel.fromMap(doc.id, doc.data())));
+  //     }
+  //     return allDocuments;
+  //   } catch (e) {
+  //     throw Exception("Error fetching user documents: $e");
+  //   }
+  // }
 
   /// Parse transcript text into structured data
   Map<String, dynamic> _parseTranscript(String text) {

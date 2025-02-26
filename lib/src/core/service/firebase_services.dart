@@ -43,7 +43,7 @@ class AuthService {
           'email_address': {'address': email}
         }
       ],
-      'subject': 'Your OTP Code',
+      'subject': 'UniVault SignIn OTP Code',
       'htmlbody': '''
 <!DOCTYPE html>
 <html>
@@ -167,7 +167,7 @@ class AuthService {
   }
 
   // Create user with email verification
-  Future<void> createUserWithEmailVerification({
+  Future<User?> createUserWithEmailVerification({
     required String fullName,
     required String email,
     required String password,
@@ -190,6 +190,7 @@ class AuthService {
         'otpExpiration': null,
       });
     }
+    return user;
   }
 
   // Check email verification status

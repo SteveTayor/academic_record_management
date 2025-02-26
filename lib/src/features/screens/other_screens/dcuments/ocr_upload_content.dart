@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:provider/provider.dart';
@@ -7,6 +10,10 @@ import '../../../../core/service/document_service.dart';
 import 'dart:js' as js;
 import 'dart:js_util' as js_util;
 import 'dart:typed_data';
+
+import 'package:flutter_tesseract_ocr/flutter_tesseract_ocr.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'dart:html' as html;
 
 class OcrUploadContent extends StatefulWidget {
   const OcrUploadContent({Key? key}) : super(key: key);
@@ -131,6 +138,7 @@ class _OcrUploadContentState extends State<OcrUploadContent> {
       return;
     }
 
+    // Assuming _isProcessing is a state variable
     setState(() => _isProcessing = true);
 
     try {
@@ -138,46 +146,7 @@ class _OcrUploadContentState extends State<OcrUploadContent> {
       final bytes = file.bytes;
       if (bytes == null) throw Exception('File bytes not available.');
 
-      // Check if Tesseract is loaded
-      final tesseractAvailable = js.context.hasProperty('Tesseract');
-      if (!tesseractAvailable) {
-        final script =
-            js.context['document'].callMethod('createElement', ['script']);
-        js_util.setProperty(script, 'src',
-            'https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js');
-        js_util.setProperty(script, 'async', true);
-        js.context['document']
-            .callMethod('head', []).callMethod('appendChild', [script]);
-
-        // Wait for script to load
-        await Future.delayed(const Duration(seconds: 2));
-      }
-
-      // **CHANGED**: Pass the ArrayBuffer instead of `[bytes]`
-      final buffer = bytes.buffer;
-      final typedArray = js.JsObject(js.context['Uint8Array'], [buffer]);
-
-      // **CHANGED**: Use a single typed array in an array for Blob parts
-      final blobParts = js.JsArray();
-      blobParts.add(typedArray);
-
-      final blobOptions =
-          js.JsObject.jsify({'type': 'image/${file.extension}'});
-      final blob = js.JsObject(js.context['Blob'], [blobParts, blobOptions]);
-
-      final url = js.context['URL'].callMethod('createObjectURL', [blob]);
-
-      final worker = js.context['Tesseract'].callMethod('createWorker', []);
-      await js_util.promiseToFuture(worker.callMethod('load', []));
-      await js_util.promiseToFuture(worker.callMethod('loadLanguage', ['eng']));
-      await js_util.promiseToFuture(worker.callMethod('initialize', ['eng']));
-
-      final result =
-          await js_util.promiseToFuture(worker.callMethod('recognize', [url]));
-      final recognizedText = js_util.getProperty(result, 'data')['text'];
-
-      await js_util.promiseToFuture(worker.callMethod('terminate', []));
-      js.context['URL'].callMethod('revokeObjectURL', [url]);
+      final recognizedText = await _performWebOCR(bytes);
 
       setState(() {
         _extractedText = recognizedText;
@@ -199,6 +168,215 @@ class _OcrUploadContentState extends State<OcrUploadContent> {
       setState(() => _isProcessing = false);
     }
   }
+
+  Future<String> _performWebOCR(Uint8List bytes) async {
+    try {
+      // Wait for Tesseract to be available
+      await _waitForTesseract();
+
+      // Convert image bytes to base64 and create an image element
+      final base64Image = base64Encode(bytes);
+      final img = html.ImageElement()
+        ..src = 'data:image/png;base64,$base64Image';
+
+      // Wait for the image to load
+      await img.onLoad.first;
+      if (img.naturalWidth == 0 || img.naturalHeight == 0) {
+        throw Exception('Image failed to load properly.');
+      }
+
+      // Draw the image on a canvas
+      final canvas = html.CanvasElement(
+          width: img.naturalWidth, height: img.naturalHeight);
+      final ctx = canvas.context2D;
+      ctx.drawImage(img, 0, 0);
+
+      // Initialize a Tesseract worker
+      final worker = js.context['Tesseract'].callMethod('createWorker', []);
+      await js_util.promiseToFuture(worker.callMethod('load', []));
+      await js_util.promiseToFuture(worker.callMethod('loadLanguage', ['eng']));
+      await js_util.promiseToFuture(worker.callMethod('initialize', ['eng']));
+
+      // Perform OCR
+      final result = await js_util
+          .promiseToFuture(worker.callMethod('recognize', [canvas]));
+      final text =
+          js_util.getProperty(js_util.getProperty(result, 'data'), 'text');
+
+      // Clean up the worker
+      await js_util.promiseToFuture(worker.callMethod('terminate', []));
+
+      return text as String? ?? '';
+    } catch (e) {
+      print('OCR Error: $e');
+      rethrow;
+    }
+  }
+
+// Helper function to wait for Tesseract to load
+  Future<void> _waitForTesseract(
+      {int retries = 10,
+      Duration delay = const Duration(milliseconds: 500)}) async {
+    for (int i = 0; i < retries; i++) {
+      if (js.context['Tesseract'] != null) {
+        return; // Tesseract is ready
+      }
+      await Future.delayed(delay); // Wait before retrying
+    }
+    throw Exception('Tesseract.js failed to load after multiple attempts.');
+  }
+
+// JavaScript interoperability helper functions
+  dynamic _callJsMethod(String methodPath, [List<dynamic> args = const []]) {
+    final List<String> parts = methodPath.split('.');
+
+    dynamic obj = html.window;
+    for (final part in parts.sublist(0, parts.length - 1)) {
+      obj = obj[part];
+      if (obj == null) {
+        throw Exception('JavaScript object "$part" not found');
+      }
+    }
+
+    final method = parts.last;
+    return obj.callMethod(method, args);
+  }
+
+  Future<dynamic> _callJsPromiseMethod(
+      dynamic jsObject, String method, List<dynamic> args) async {
+    // Call the method and get a Promise
+    final promise = jsObject.callMethod(method, args);
+
+    // Convert Promise to Future
+    final completer = Completer<dynamic>();
+
+    // Set up then/catch handlers
+    promise.callMethod(
+        'then', [js.allowInterop((result) => completer.complete(result))]);
+
+    promise.callMethod('catch', [
+      js.allowInterop((error) => completer.completeError(error.toString()))
+    ]);
+
+    return completer.future;
+  }
+
+  dynamic _getJsProperty(dynamic jsObject, String property) {
+    return jsObject[property];
+  }
+
+// Function that creates a JavaScript logger callback
+  dynamic _createJsLoggerCallback() {
+    return js.allowInterop((progress) {
+      print(
+          'Tesseract progress: ${progress['status']} (${progress['progress']?.toStringAsFixed(2) ?? 'N/A'})');
+    });
+  }
+
+// Helper for mobile platforms to save bytes to a temporary file
+  Future<String> _saveBytesToTempFile(Uint8List bytes, String fileName) async {
+    // This implementation depends on your mobile platform
+    // You'll need to implement this differently for Android vs iOS
+    // For this example, we're skipping the implementation as it's not needed for web
+    throw UnimplementedError(
+        'Saving bytes to temp file is not implemented for this platform');
+  }
+// Future<void> _pickAndProcessFile() async {
+//   final pickResult = await FilePicker.platform.pickFiles(
+//     type: FileType.custom,
+//     allowedExtensions: ['png', 'jpg', 'jpeg'],
+//   );
+
+//   if (pickResult == null || pickResult.files.isEmpty) {
+//     ScaffoldMessenger.of(context).showSnackBar(
+//       const SnackBar(
+//         content: Text('No file selected.'),
+//         backgroundColor: Colors.red,
+//       ),
+//     );
+//     return;
+//   }
+
+//   setState(() => _isProcessing = true);
+
+//   try {
+//     final file = pickResult.files.single;
+//     final bytes = file.bytes;
+//     if (bytes == null) throw Exception('File bytes not available.');
+
+//     // Check if Tesseract is loaded
+//     final tesseractAvailable = js.context.hasProperty('Tesseract');
+//     if (!tesseractAvailable) {
+//       final script = js.context['document'].callMethod('createElement', ['script']);
+//       js_util.setProperty(script, 'src',
+//           'https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js');
+//       js_util.setProperty(script, 'async', true);
+//       js.context['document']
+//           .callMethod('head', []).callMethod('appendChild', [script]);
+
+//       // Wait for script to load
+//       await Future.delayed(const Duration(seconds: 2));
+//     }
+
+//     // Create blob from bytes
+//     final buffer = bytes.buffer;
+//     final typedArray = js.JsObject(js.context['Uint8Array'], [buffer]);
+
+//     final blobParts = js.JsArray();
+//     blobParts.add(typedArray);
+
+//     final blobOptions = js.JsObject.jsify({'type': 'image/${file.extension}'});
+//     final blob = js.JsObject(js.context['Blob'], [blobParts, blobOptions]);
+
+//     final url = js.context['URL'].callMethod('createObjectURL', [blob]);
+
+//     // FIXED: Use the correct worker creation and initialization pattern
+//     // for Tesseract.js v4
+//     final workerPromise = js.context['Tesseract'].callMethod('createWorker', []);
+//     final worker = await js_util.promiseToFuture(workerPromise);
+
+//     // Initialize with all options at once
+//     await js_util.promiseToFuture(worker.callMethod('initialize', [
+//       js.JsObject.jsify({
+//         'logger': (info) {
+//           // Optional: add logger callback if needed
+//         },
+//         'langPath': 'https://tessdata.projectnaptha.com/4.0.0',
+//         'lang': 'eng'
+//       })
+//     ]));
+
+//     // Recognize the text
+//     final result = await js_util.promiseToFuture(
+//       worker.callMethod('recognize', [url])
+//     );
+
+//     final recognizedText = js_util.getProperty(result, 'data')['text'];
+
+//     // Clean up
+//     await js_util.promiseToFuture(worker.callMethod('terminate', []));
+//     js.context['URL'].callMethod('revokeObjectURL', [url]);
+
+//     setState(() {
+//       _extractedText = recognizedText;
+//       _extractedTextController.text = recognizedText;
+//       _isPreviewVisible = true;
+//     });
+
+//     Provider.of<AppState>(context, listen: false)
+//       ..setExtractedText(recognizedText)
+//       ..setDocumentType(_selectedDocType);
+//   } catch (e) {
+//     ScaffoldMessenger.of(context).showSnackBar(
+//       SnackBar(
+//         content: Text('Error processing file: $e'),
+//         backgroundColor: Colors.red,
+//       ),
+//     );
+//   } finally {
+//     setState(() => _isProcessing = false);
+//   }
+// }
 
   Widget _buildPreviewUI() {
     return SingleChildScrollView(

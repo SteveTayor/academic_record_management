@@ -1,5 +1,6 @@
 import 'package:archival_system/src/features/screens/other_screens/document_overview_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../../core/model/document_model.dart';
 import '../../../core/service/document_service.dart';
@@ -455,6 +456,66 @@ class _DashboardPageState extends State<DashboardPage> {
 
   final DocumentService _documentService = DocumentService();
 
+  Future<List<DocumentModel>> _fetchRecentDocuments() async {
+    try {
+      // Use the new method from DocumentService
+      return await _documentService.fetchRecentDocuments(limit: 3);
+    } catch (e) {
+      // Show a more helpful error that guides the user
+      if (e.toString().contains('index')) {
+        final indexUrl = _documentService.getIndexCreationUrl();
+        // You could show a dialog here with the URL
+        print('Index missing. Create it at: $indexUrl');
+      }
+      throw Exception('Error fetching recent documents: $e');
+    }
+  }
+
+  // this helper method to show a dialog when the index is missing
+  void _showIndexMissingDialog(BuildContext context) {
+    final indexUrl = _documentService.getIndexCreationUrl();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Database Index Required'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'This feature requires a special database index. Please create the index by clicking the button below and following the Firebase instructions.',
+            ),
+            const SizedBox(height: 16),
+            SelectableText(
+              indexUrl,
+              style: TextStyle(fontSize: 12, color: Colors.blue.shade700),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              // Launch the URL if you have url_launcher package
+              // await launchUrl(Uri.parse(indexUrl));
+              // Or just copy to clipboard
+              await Clipboard.setData(ClipboardData(text: indexUrl));
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('URL copied to clipboard')),
+              );
+              Navigator.pop(context);
+            },
+            child: const Text('Copy URL'),
+          ),
+        ],
+      ),
+    );
+  }
+
   // ----- MOCK DATA (Do not remove, only comment out) -----
 //  static const int _mockTotalDocuments = 45;
 //  static const int _mockRecentRetrievals = 5;
@@ -496,6 +557,7 @@ class _DashboardPageState extends State<DashboardPage> {
     return Scaffold(
       backgroundColor: white,
       body: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Sidebar with animation
           Sidebar(
@@ -508,8 +570,9 @@ class _DashboardPageState extends State<DashboardPage> {
               padding: const EdgeInsets.all(16.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.start,
                 children: [
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 8),
                   const Text(
                     'Dashboard Overview',
                     style: TextStyle(
@@ -598,6 +661,22 @@ class _DashboardPageState extends State<DashboardPage> {
               return const Center(child: CircularProgressIndicator());
             }
             if (snapshot.hasError) {
+              // If it's an index issue, show a more helpful message
+              if (snapshot.error.toString().contains('index')) {
+                return Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text('This feature requires a database index'),
+                      const SizedBox(height: 12),
+                      ElevatedButton(
+                        onPressed: () => _showIndexMissingDialog(context),
+                        child: const Text('Get Help'),
+                      ),
+                    ],
+                  ),
+                );
+              }
               return Center(
                   child: Text(
                       'Error loading recent documents: ${snapshot.error}'));
@@ -684,21 +763,21 @@ class _DashboardPageState extends State<DashboardPage> {
     }
   }
 
-  Future<List<DocumentModel>> _fetchRecentDocuments() async {
-    try {
-      final querySnapshot = await _documentService.firestore
-          .collectionGroup('documents')
-          .orderBy('timestamp', descending: true)
-          .limit(3)
-          .get();
+  // Future<List<DocumentModel>> _fetchRecentDocuments() async {
+  //   try {
+  //     final querySnapshot = await _documentService.firestore
+  //         .collectionGroup('documents')
+  //         .orderBy('timestamp', descending: true)
+  //         .limit(3)
+  //         .get();
 
-      return querySnapshot.docs
-          .map((doc) => DocumentModel.fromMap(doc.id, doc.data()))
-          .toList();
-    } catch (e) {
-      throw Exception('Error fetching recent documents: $e');
-    }
-  }
+  //     return querySnapshot.docs
+  //         .map((doc) => DocumentModel.fromMap(doc.id, doc.data()))
+  //         .toList();
+  //   } catch (e) {
+  //     throw Exception('Error fetching recent documents: $e');
+  //   }
+  // }
 
   String _formatTimestamp(DateTime timestamp) {
     final now = DateTime.now();
