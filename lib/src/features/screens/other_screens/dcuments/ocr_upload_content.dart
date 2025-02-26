@@ -116,17 +116,17 @@ class _OcrUploadContentState extends State<OcrUploadContent> {
   }
 
   Future<void> _pickAndProcessFile() async {
-    // Pick the file and store the result in a descriptive variable
     final pickResult = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['png', 'jpg', 'jpeg'],
     );
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           
-    // Check if a file was selected
+
     if (pickResult == null || pickResult.files.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-            content: Text('No file selected.'), backgroundColor: Colors.red),
+          content: Text('No file selected.'),
+          backgroundColor: Colors.red,
+        ),
       );
       return;
     }
@@ -138,37 +138,62 @@ class _OcrUploadContentState extends State<OcrUploadContent> {
       final bytes = file.bytes;
       if (bytes == null) throw Exception('File bytes not available.');
 
-      // Create a blob from the file bytes
-      final blob = js.JsObject(js.context['Blob'], [
-        bytes,
-        js.JsObject.jsify({'type': 'image/${file.extension}'})
-      ]);
+      // Check if Tesseract is loaded
+      final tesseractAvailable = js.context.hasProperty('Tesseract');
+      if (!tesseractAvailable) {
+        final script =
+            js.context['document'].callMethod('createElement', ['script']);
+        js_util.setProperty(script, 'src',
+            'https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js');
+        js_util.setProperty(script, 'async', true);
+        js.context['document']
+            .callMethod('head', []).callMethod('appendChild', [script]);
+
+        // Wait for script to load
+        await Future.delayed(const Duration(seconds: 2));
+      }
+
+      // **CHANGED**: Pass the ArrayBuffer instead of `[bytes]`
+      final buffer = bytes.buffer;
+      final typedArray = js.JsObject(js.context['Uint8Array'], [buffer]);
+
+      // **CHANGED**: Use a single typed array in an array for Blob parts
+      final blobParts = js.JsArray();
+      blobParts.add(typedArray);
+
+      final blobOptions =
+          js.JsObject.jsify({'type': 'image/${file.extension}'});
+      final blob = js.JsObject(js.context['Blob'], [blobParts, blobOptions]);
+
       final url = js.context['URL'].callMethod('createObjectURL', [blob]);
 
-      // Perform OCR using Tesseract.js
-      final promise =
-          js.context['Tesseract'].callMethod('recognize', [url, 'eng']);
-      final ocrResult = await js_util.promiseToFuture(promise);
+      final worker = js.context['Tesseract'].callMethod('createWorker', []);
+      await js_util.promiseToFuture(worker.callMethod('load', []));
+      await js_util.promiseToFuture(worker.callMethod('loadLanguage', ['eng']));
+      await js_util.promiseToFuture(worker.callMethod('initialize', ['eng']));
 
-      // Extract the recognized text
-      final recognizedText = ocrResult['data']['text'];
+      final result =
+          await js_util.promiseToFuture(worker.callMethod('recognize', [url]));
+      final recognizedText = js_util.getProperty(result, 'data')['text'];
 
-      // Clean up the object URL to free memory
+      await js_util.promiseToFuture(worker.callMethod('terminate', []));
       js.context['URL'].callMethod('revokeObjectURL', [url]);
 
-      // Update the state with the recognized text
       setState(() {
         _extractedText = recognizedText;
+        _extractedTextController.text = recognizedText;
         _isPreviewVisible = true;
       });
+
       Provider.of<AppState>(context, listen: false)
         ..setExtractedText(recognizedText)
         ..setDocumentType(_selectedDocType);
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-            content: Text('Error processing file: $e'),
-            backgroundColor: Colors.red),
+          content: Text('Error processing file: $e'),
+          backgroundColor: Colors.red,
+        ),
       );
     } finally {
       setState(() => _isProcessing = false);

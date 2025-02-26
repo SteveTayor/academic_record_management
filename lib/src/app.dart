@@ -63,8 +63,8 @@ class MyApp extends StatelessWidget {
           theme: ThemeData(),
           darkTheme: ThemeData.dark(),
           themeMode: settingsController.themeMode,
-          // home: RootPage(),
-          home: const DashboardPage(),
+          home: const RootPage(),
+          // home: const DashboardPage(),
           // Define a function to handle named routes in order to support
           // Flutter web url navigation and deep linking.
           // onGenerateRoute: (RouteSettings routeSettings) {

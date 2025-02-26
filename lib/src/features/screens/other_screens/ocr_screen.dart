@@ -35,7 +35,8 @@ class _OcrUploadScreenState extends State<OcrUploadScreen> {
   // 1) OCR-Upload related fields
   // ----------------------------------------
   bool _isProcessing = false;
-  bool _isPreviewVisible = false; // Controls whether we show the preview or the upload UI
+  bool _isPreviewVisible =
+      false; // Controls whether we show the preview or the upload UI
   String _extractedText = '';
 
   // ----------------------------------------
@@ -184,7 +185,6 @@ class _OcrUploadScreenState extends State<OcrUploadScreen> {
       final appState = Provider.of<AppState>(context, listen: false);
       appState.setExtractedText(recognizedText);
       appState.setDocumentType(_selectedDocType);
-
     } catch (e) {
       _showErrorSnackbar('Error processing file: $e');
     } finally {
@@ -208,13 +208,14 @@ class _OcrUploadScreenState extends State<OcrUploadScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(breadcrumbs, style: TextStyle(color: Colors.grey[600], fontSize: 14)),
+        Text(breadcrumbs,
+            style: TextStyle(color: Colors.grey[600], fontSize: 14)),
         const SizedBox(height: 20),
         _buildDocumentPreviewSection(),
         const SizedBox(height: 24),
         _buildStudentDetailsForm(),
         const Spacer(),
-        _buildAdminFooter(),
+        // _buildAdminFooter(),
       ],
     );
   }
@@ -279,21 +280,24 @@ class _OcrUploadScreenState extends State<OcrUploadScreen> {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Student: ${transcript.student.name}', style: const TextStyle(fontWeight: FontWeight.bold)),
+          Text('Student: ${transcript.student.name}',
+              style: const TextStyle(fontWeight: FontWeight.bold)),
           Text('Matric Number: ${transcript.student.matricNumber}'),
           Text('Cumulative GPA: ${transcript.cumulativeGpa}'),
           const Text('Courses:', style: TextStyle(fontWeight: FontWeight.bold)),
           ...transcript.student.courses.map((course) => Text(
-            '- ${course.courseCode} (${course.description}): ${course.remarks} (${course.marksPercentage}%)',
-          )),
+                '- ${course.courseCode} (${course.description}): ${course.remarks} (${course.marksPercentage}%)',
+              )),
         ],
       );
-    } else if (documentType == 'Letter' && appState.currentDocument?.structuredData != null) {
+    } else if (documentType == 'Letter' &&
+        appState.currentDocument?.structuredData != null) {
       final data = appState.currentDocument!.structuredData!;
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('From: ${data['from'] ?? 'Unknown'}', style: const TextStyle(fontWeight: FontWeight.bold)),
+          Text('From: ${data['from'] ?? 'Unknown'}',
+              style: const TextStyle(fontWeight: FontWeight.bold)),
           Text('To: ${data['to'] ?? 'Unknown'}'),
           Text('Date: ${data['date'] ?? 'Unknown'}'),
           Text('Body: ${data['body'] ?? text}'),
@@ -326,9 +330,11 @@ class _OcrUploadScreenState extends State<OcrUploadScreen> {
                 ),
               ),
               const Divider(height: 30),
-              _buildFormField('Student Name', 'Enter student\'s full name', _userNameController),
+              _buildFormField('Student Name', 'Enter student\'s full name',
+                  _userNameController),
               const SizedBox(height: 16),
-              _buildFormField('Matric Number', 'Enter matric number', _matricNumberController),
+              _buildFormField('Matric Number', 'Enter matric number',
+                  _matricNumberController),
               const SizedBox(height: 24),
               _buildLevelSelector(),
               const SizedBox(height: 24),
@@ -342,7 +348,8 @@ class _OcrUploadScreenState extends State<OcrUploadScreen> {
     );
   }
 
-  Widget _buildFormField(String label, String hint, TextEditingController controller) {
+  Widget _buildFormField(
+      String label, String hint, TextEditingController controller) {
     return TextFormField(
       controller: controller,
       decoration: InputDecoration(
@@ -374,10 +381,18 @@ class _OcrUploadScreenState extends State<OcrUploadScreen> {
             });
           },
           children: const [
-            Padding(padding: EdgeInsets.symmetric(horizontal: 16), child: Text('100 Level')),
-            Padding(padding: EdgeInsets.symmetric(horizontal: 16), child: Text('200 Level')),
-            Padding(padding: EdgeInsets.symmetric(horizontal: 16), child: Text('300 Level')),
-            Padding(padding: EdgeInsets.symmetric(horizontal: 16), child: Text('400 Level')),
+            Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16),
+                child: Text('100 Level')),
+            Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16),
+                child: Text('200 Level')),
+            Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16),
+                child: Text('300 Level')),
+            Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16),
+                child: Text('400 Level')),
           ],
           color: Colors.grey,
           selectedColor: Colors.white,
@@ -409,12 +424,14 @@ class _OcrUploadScreenState extends State<OcrUploadScreen> {
             final isSelected = _selectedDocType == docType;
             return ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: isSelected ? Colors.purple[700] : Colors.grey[200],
+                backgroundColor:
+                    isSelected ? Colors.purple[700] : Colors.grey[200],
                 foregroundColor: isSelected ? Colors.white : Colors.black,
               ),
               onPressed: () {
                 setState(() => _selectedDocType = docType);
-                Provider.of<AppState>(context, listen: false).setDocumentType(docType);
+                Provider.of<AppState>(context, listen: false)
+                    .setDocumentType(docType);
               },
               child: Text(docType),
             );
@@ -457,7 +474,8 @@ class _OcrUploadScreenState extends State<OcrUploadScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Admin User', style: TextStyle(fontWeight: FontWeight.bold)),
+          const Text('Admin User',
+              style: TextStyle(fontWeight: FontWeight.bold)),
           Text(
             'System Administrator',
             style: TextStyle(color: Colors.grey[600]),
@@ -491,7 +509,8 @@ class _OcrUploadScreenState extends State<OcrUploadScreen> {
       await _documentService.saveDocument(document);
 
       // Update AppState
-      Provider.of<AppState>(context, listen: false).setCurrentDocument(document);
+      Provider.of<AppState>(context, listen: false)
+          .setCurrentDocument(document);
 
       // Close or navigate away
       Navigator.pop(context);

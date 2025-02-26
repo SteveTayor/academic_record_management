@@ -157,6 +157,15 @@ class AuthService {
     });
   }
 
+  Future<Map<String, dynamic>?> getCurrentAdminData() async {
+    final user = _auth.currentUser;
+    if (user != null) {
+      final doc = await _firestore.collection('admins').doc(user.uid).get();
+      return doc.data();
+    }
+    return null;
+  }
+
   // Create user with email verification
   Future<void> createUserWithEmailVerification({
     required String fullName,

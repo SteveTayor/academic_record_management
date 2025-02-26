@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import '../../../../core/service/document_service.dart';
 import '../../../widgets/sidebar.dart';
 import '../../dashborad/dashboard.dart';
+import '../../searc/search_screen.dart';
 import 'doc_overview_content.dart';
 import 'ocr_upload_content.dart'; // Import the new widget
 
@@ -13,6 +15,7 @@ class DocumentOverviewScreen extends StatefulWidget {
 
 class _DocumentOverviewScreenState extends State<DocumentOverviewScreen> {
   final _navigatorKey = GlobalKey<NavigatorState>();
+  final DocumentService documentService = DocumentService();
 
   @override
   Widget build(BuildContext context) {
@@ -35,25 +38,28 @@ class _DocumentOverviewScreenState extends State<DocumentOverviewScreen> {
                         onOcrUploadPressed: () =>
                             _navigatorKey.currentState?.pushNamed('ocr-upload'),
                         onSearchPressed: () =>
-                            ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                              content: Text('Search not implemented yet')),
-                        ), // Placeholder for search
+                            _navigatorKey.currentState?.pushNamed('search'),
                       ),
                     );
                   case 'ocr-upload':
                     return MaterialPageRoute(
                         builder: (_) => const OcrUploadContent());
+                  case 'search':
+                    return MaterialPageRoute(
+                      builder: (_) => SearchScreen(
+                        documentService: documentService,
+                        selectedMenu: 'Documents',
+                        onMenuSelected: (menu) =>
+                            _onSidebarMenuSelected(menu, context),
+                      ),
+                    );
                   default:
                     return MaterialPageRoute(
                       builder: (_) => OverviewContent(
                         onOcrUploadPressed: () =>
                             _navigatorKey.currentState?.pushNamed('ocr-upload'),
                         onSearchPressed: () =>
-                            ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                              content: Text('Search not implemented yet')),
-                        ),
+                            _navigatorKey.currentState?.pushNamed('search'),
                       ),
                     );
                 }
