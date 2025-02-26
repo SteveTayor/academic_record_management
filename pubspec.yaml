@@ -22,6 +22,7 @@ dependencies:
   google_fonts: ^6.2.1
   google_ml_kit: ^0.19.0
   image: ^4.3.0
+  lottie: ^3.3.0
   path_provider: ^2.1.5
   pdf_render: ^1.4.12
   provider: ^6.1.2
@@ -44,3 +45,4 @@ flutter:
     # Add assets from the images directory to the application.
     - assets/images/
     - assets/images/university-of-ibadan-logo-transparent.png
+    - assets/lottie/email_sent.json

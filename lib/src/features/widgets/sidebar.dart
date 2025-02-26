@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 
 class Sidebar extends StatefulWidget {
   final String selectedMenu;
@@ -46,7 +47,7 @@ class _SidebarState extends State<Sidebar> {
                         height: 40,
                         width: 80,
                         fit: BoxFit.contain,
-                      ),
+                      ).animate().fadeIn(duration: 300.ms),
                       const SizedBox(width: 10),
                       Text(
                         'UniVault',
@@ -55,7 +56,7 @@ class _SidebarState extends State<Sidebar> {
                           fontWeight: FontWeight.bold,
                           color: Colors.blue[800],
                         ),
-                      ),
+                      ).animate().fadeIn(duration: 300.ms),
                     ],
                   )
                 else
@@ -64,8 +65,8 @@ class _SidebarState extends State<Sidebar> {
                     height: 30,
                     width: 30,
                     fit: BoxFit.contain,
-                  ),
-                if (!isCollapsed) // Show toggle only when expanded
+                  ).animate().fadeIn(duration: 300.ms),
+                if (!isCollapsed)
                   IconButton(
                     icon: Icon(
                       Icons.arrow_back_ios,
@@ -76,8 +77,8 @@ class _SidebarState extends State<Sidebar> {
                         isCollapsed = !isCollapsed;
                       });
                     },
-                  )
-                else // Show toggle centered when collapsed
+                  ).animate().fadeIn(duration: 300.ms)
+                else
                   IconButton(
                     icon: Icon(
                       Icons.arrow_forward_ios,
@@ -88,20 +89,16 @@ class _SidebarState extends State<Sidebar> {
                         isCollapsed = !isCollapsed;
                       });
                     },
-                  ),
+                  ).animate().fadeIn(duration: 300.ms),
               ],
             ),
           ),
-
           // Menu Items
           _buildMenuItem(
               'Overview', Icons.grid_view, widget.selectedMenu == 'Overview'),
           _buildMenuItem(
               'Documents', Icons.folder, widget.selectedMenu == 'Documents'),
-
-          // Spacer to push user info to bottom
           const Spacer(),
-
           // Admin Info Section
           Padding(
             padding: const EdgeInsets.all(16.0),
@@ -118,13 +115,13 @@ class _SidebarState extends State<Sidebar> {
                       ? const CircleAvatar(
                           radius: 20,
                           child: Icon(Icons.person, size: 24),
-                        )
+                        ).animate().fadeIn(duration: 300.ms)
                       : Row(
                           children: [
                             const CircleAvatar(
                               radius: 20,
                               child: Icon(Icons.person, size: 24),
-                            ),
+                            ).animate().fadeIn(duration: 300.ms),
                             const SizedBox(width: 12),
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -135,11 +132,11 @@ class _SidebarState extends State<Sidebar> {
                                     fontWeight: FontWeight.bold,
                                     color: Colors.blue[800],
                                   ),
-                                ),
+                                ).animate().fadeIn(duration: 300.ms),
                                 const Text(
                                   'System Administrator',
                                   style: TextStyle(color: Colors.grey),
-                                ),
+                                ).animate().fadeIn(duration: 300.ms),
                               ],
                             ),
                           ],
@@ -153,13 +150,13 @@ class _SidebarState extends State<Sidebar> {
                     ? const CircleAvatar(
                         radius: 20,
                         child: Icon(Icons.person, size: 24),
-                      )
+                      ).animate().fadeIn(duration: 300.ms)
                     : Row(
                         children: [
                           const CircleAvatar(
                             radius: 20,
                             child: Icon(Icons.person, size: 24),
-                          ),
+                          ).animate().fadeIn(duration: 300.ms),
                           const SizedBox(width: 12),
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -170,11 +167,11 @@ class _SidebarState extends State<Sidebar> {
                                   fontWeight: FontWeight.bold,
                                   color: Colors.blue[800],
                                 ),
-                              ),
+                              ).animate().fadeIn(duration: 300.ms),
                               const Text(
                                 'System Administrator',
                                 style: TextStyle(color: Colors.grey),
-                              ),
+                              ).animate().fadeIn(duration: 300.ms),
                             ],
                           ),
                         ],
@@ -216,7 +213,7 @@ class _SidebarState extends State<Sidebar> {
           selected: isSelected,
           selectedColor: Colors.blue[800],
           selectedTileColor: Colors.blue[800],
-        ),
+        ).animate().fadeIn(duration: 300.ms),
       ),
     );
   }

@@ -100,7 +100,8 @@ class _RootPageState extends State<RootPage> {
                 // Navigate to appropriate screen based on OTP status
                 return otpSnapshot.data!
                     ? const DashboardPage()
-                    : OtpVerificationPage(email: user.email!);
+                    : const LoginPage();
+                // : OtpVerificationPage(email: user.email!);
               },
             );
           },
