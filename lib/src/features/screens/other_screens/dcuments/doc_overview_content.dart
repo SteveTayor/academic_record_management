@@ -107,22 +107,22 @@ class OverviewContent extends StatelessWidget {
   Widget _buildRecentDocumentsTable(BuildContext context) {
     final documents = [
       {
-        'fileName': 'Invoice.pdf',
-        'status': 'OCR Complete',
-        'category': 'Finance',
-        'date': '2024-01-20'
+        'fileName': 'Transcript.pdf',
+        'status': 'Processed',
+        'category': '300 Level',
+        'date': '2 hours ago'
       },
       {
-        'fileName': 'Contract.pdf',
-        'status': 'Processing',
-        'category': 'Legal',
-        'date': '2024-01-19'
+        'fileName': 'Letter.pdf',
+        'status': 'Processed',
+        'category': '200 Level',
+        'date': '1 day ago'
       },
       {
         'fileName': 'Report.pdf',
-        'status': 'Queued',
-        'category': 'Operations',
-        'date': '2024-01-18'
+        'status': 'Processed',
+        'category': '400 Level',
+        'date': '3 days ago'
       },
     ];
 

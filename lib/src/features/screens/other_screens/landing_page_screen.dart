@@ -32,23 +32,23 @@ class LandingPage extends StatelessWidget {
           Row(
             children: [
               SizedBox(width: 10),
-             Image.asset(
-                        'assets/images/university-of-ibadan-logo-transparent.png',
-                        height: 50,
-                        width: 50,
-                        fit: BoxFit.fitHeight,
-                      )
+              Image.asset(
+                'assets/images/university-of-ibadan-logo-transparent.png',
+                height: 50,
+                width: 50,
+                fit: BoxFit.fitHeight,
+              ),
               // _navButton('Features'),
               // _navButton('About'),
               // _navButton('Contact'),
+              Text('UniVault',
+                  style: GoogleFonts.poppins(
+                    fontSize: 35,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.blue[800],
+                  )),
             ],
           ),
-          Text('UniVault',
-              style: GoogleFonts.poppins(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.blue[800],
-              )),
           Row(
             children: [
               // _navButton('Features'),
@@ -64,7 +64,9 @@ class LandingPage extends StatelessWidget {
                       MaterialPageRoute(builder: (context) => LoginPage()));
                 },
                 child: Text('Login',
-                    style: GoogleFonts.poppins(color: Colors.grey[700],)),
+                    style: GoogleFonts.poppins(
+                      color: Colors.grey[700],
+                    )),
               ),
               const SizedBox(width: 10),
               ElevatedButton(
@@ -107,7 +109,7 @@ class LandingPage extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 80, horizontal: 40),
       child: Column(
         children: [
-          Text('Simple Academic Document Management',
+          Text('Academic Document Management',
               textAlign: TextAlign.center,
               style: GoogleFonts.poppins(
                 fontSize: 40,

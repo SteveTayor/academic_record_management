@@ -4,6 +4,9 @@ import 'package:provider/provider.dart';
 import '../../../../core/model/document_model.dart';
 import '../../../../core/providers/app_provider.dart';
 import '../../../../core/service/document_service.dart';
+import 'dart:js' as js;
+import 'dart:js_util' as js_util;
+import 'dart:typed_data';
 
 class OcrUploadContent extends StatefulWidget {
   const OcrUploadContent({Key? key}) : super(key: key);
@@ -19,6 +22,7 @@ class _OcrUploadContentState extends State<OcrUploadContent> {
   final _formKey = GlobalKey<FormState>();
   final _userNameController = TextEditingController();
   final _matricNumberController = TextEditingController();
+  final _extractedTextController = TextEditingController();
   final DocumentService _documentService = DocumentService();
   String _selectedLevel = '300 Level';
   String _selectedDocType = 'Other';
@@ -42,24 +46,26 @@ class _OcrUploadContentState extends State<OcrUploadContent> {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              TextButton(
-                onPressed: () {
-                  Navigator.popUntil(
-                      context, (route) => route.settings.name == 'overview');
-                },
-                child: const Text('Documents'),
-              ),
-              const Text(' > OCR Upload'),
-            ],
-          ),
-          const SizedBox(height: 16),
-          _isPreviewVisible ? _buildPreviewUI() : _buildUploadUI(),
-        ],
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.popUntil(
+                        context, (route) => route.settings.name == 'overview');
+                  },
+                  child: const Text('Documents'),
+                ),
+                const Text(' > OCR Upload'),
+              ],
+            ),
+            const SizedBox(height: 16),
+            _isPreviewVisible ? _buildPreviewUI() : _buildUploadUI(),
+          ],
+        ),
       ),
     );
   }
@@ -110,12 +116,14 @@ class _OcrUploadContentState extends State<OcrUploadContent> {
   }
 
   Future<void> _pickAndProcessFile() async {
-    final result = await FilePicker.platform.pickFiles(
+    // Pick the file and store the result in a descriptive variable
+    final pickResult = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['png', 'jpg', 'jpeg'],
     );
-
-    if (result == null || result.files.isEmpty) {
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           
+    // Check if a file was selected
+    if (pickResult == null || pickResult.files.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
             content: Text('No file selected.'), backgroundColor: Colors.red),
@@ -126,11 +134,29 @@ class _OcrUploadContentState extends State<OcrUploadContent> {
     setState(() => _isProcessing = true);
 
     try {
-      final file = result.files.single;
+      final file = pickResult.files.single;
       final bytes = file.bytes;
       if (bytes == null) throw Exception('File bytes not available.');
-      final recognizedText =
-          'Sample recognized text from ${file.name}'; // Replace with actual OCR logic
+
+      // Create a blob from the file bytes
+      final blob = js.JsObject(js.context['Blob'], [
+        bytes,
+        js.JsObject.jsify({'type': 'image/${file.extension}'})
+      ]);
+      final url = js.context['URL'].callMethod('createObjectURL', [blob]);
+
+      // Perform OCR using Tesseract.js
+      final promise =
+          js.context['Tesseract'].callMethod('recognize', [url, 'eng']);
+      final ocrResult = await js_util.promiseToFuture(promise);
+
+      // Extract the recognized text
+      final recognizedText = ocrResult['data']['text'];
+
+      // Clean up the object URL to free memory
+      js.context['URL'].callMethod('revokeObjectURL', [url]);
+
+      // Update the state with the recognized text
       setState(() {
         _extractedText = recognizedText;
         _isPreviewVisible = true;
@@ -150,15 +176,18 @@ class _OcrUploadContentState extends State<OcrUploadContent> {
   }
 
   Widget _buildPreviewUI() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildDocumentPreviewSection(),
-        const SizedBox(height: 24),
-        _buildStudentDetailsForm(),
-        const Spacer(),
-        _buildAdminFooter(),
-      ],
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 24),
+          _buildDocumentPreviewSection(),
+          const SizedBox(height: 24),
+          _buildStudentDetailsForm(),
+          const SizedBox(height: 24),
+          _buildAdminFooter(),
+        ],
+      ),
     );
   }
 
@@ -193,15 +222,32 @@ class _OcrUploadContentState extends State<OcrUploadContent> {
             ),
             const SizedBox(height: 8),
             Container(
-              height: 150,
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 border: Border.all(color: Colors.grey[300]!),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: SingleChildScrollView(
-                child: Text(_extractedText),
+              child: TextFormField(
+                controller: _extractedTextController,
+                maxLines: null, // Allows multiple lines
+                minLines: 10, // Ensures sufficient space
+                decoration: InputDecoration(
+                  fillColor: Colors.blueGrey.shade50,
+                  filled: true,
+                  enabledBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: Colors.blueGrey.shade50),
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: Colors.white),
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                  border: InputBorder.none,
+                ),
               ),
+              // SingleChildScrollView(
+              //   child: Text(_extractedText),
+              // ),
             ),
           ],
         ),
@@ -298,37 +344,64 @@ class _OcrUploadContentState extends State<OcrUploadContent> {
       children: [
         const Text('Document Type', style: TextStyle(fontSize: 16)),
         const SizedBox(height: 8),
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 3,
-            childAspectRatio: 3,
-            mainAxisSpacing: 8,
-            crossAxisSpacing: 8,
-          ),
-          itemCount: _docTypes.length,
-          itemBuilder: (context, index) {
-            final docType = _docTypes[index];
-            final isSelected = _selectedDocType == docType;
-            return ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor:
-                    isSelected ? Colors.purple[700] : Colors.grey[200],
-                foregroundColor: isSelected ? Colors.white : Colors.black,
-              ),
-              onPressed: () {
-                setState(() => _selectedDocType = docType);
+        Wrap(
+          spacing: 8, // Horizontal spacing between chips
+          runSpacing: 8, // Vertical spacing between lines
+          children: _docTypes.map((docType) {
+            return _DocTypeChip(
+              label: docType,
+              isSelected: _selectedDocType == docType,
+              onSelected: () {
+                setState(() {
+                  _selectedDocType = docType;
+                });
                 Provider.of<AppState>(context, listen: false)
                     .setDocumentType(docType);
               },
-              child: Text(docType),
             );
-          },
+          }).toList(),
         ),
       ],
     );
   }
+
+  // Widget _buildDocTypeSelector() {
+  //   return Column(
+  //     crossAxisAlignment: CrossAxisAlignment.start,
+  //     children: [
+  //       const Text('Document Type', style: TextStyle(fontSize: 16)),
+  //       const SizedBox(height: 8),
+  //       GridView.builder(
+  //         shrinkWrap: true,
+  //         physics: const NeverScrollableScrollPhysics(),
+  //         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+  //           crossAxisCount: 3,
+  //           childAspectRatio: 3,
+  //           mainAxisSpacing: 8,
+  //           crossAxisSpacing: 8,
+  //         ),
+  //         itemCount: _docTypes.length,
+  //         itemBuilder: (context, index) {
+  //           final docType = _docTypes[index];
+  //           final isSelected = _selectedDocType == docType;
+  //           return ElevatedButton(
+  //             style: ElevatedButton.styleFrom(
+  //               backgroundColor:
+  //                   isSelected ? Colors.blue[800] : Colors.grey[200],
+  //               foregroundColor: isSelected ? Colors.white : Colors.black,
+  //             ),
+  //             onPressed: () {
+  //               setState(() => _selectedDocType = docType);
+  //               Provider.of<AppState>(context, listen: false)
+  //                   .setDocumentType(docType);
+  //             },
+  //             child: Text(docType),
+  //           );
+  //         },
+  //       ),
+  //     ],
+  //   );
+  // }
 
   Widget _buildActionButtons() {
     return Row(
@@ -380,14 +453,26 @@ class _OcrUploadContentState extends State<OcrUploadContent> {
     try {
       final document = DocumentModel(
         id: '',
-        userName: _userNameController.text,
-        matricNumber: _matricNumberController.text,
-        level: _selectedLevel.replaceAll(' Level', ''),
-        text: _extractedText,
+        userName: _userNameController.text, // Assuming you have this
+        matricNumber: _matricNumberController.text, // Assuming you have this
+        level: _selectedLevel.replaceAll(' Level', ''), // Adjust as needed
+        text: _extractedTextController.text, // Use the edited text
         documentType: _selectedDocType,
         fileUrl: '',
         timestamp: DateTime.now(),
       );
+      // Save the document (e.g., via a provider or service)
+      // Provider.of<AppState>(context, listen: false).setCurrentDocument(document);
+      // final document = DocumentModel(
+      //   id: '',
+      //   userName: _userNameController.text,
+      //   matricNumber: _matricNumberController.text,
+      //   level: _selectedLevel.replaceAll(' Level', ''),
+      //   text: _extractedText,
+      //   documentType: _selectedDocType,
+      //   fileUrl: '',
+      //   timestamp: DateTime.now(),
+      // );
 
       await _documentService.saveDocument(document);
       Provider.of<AppState>(context, listen: false)
@@ -403,5 +488,29 @@ class _OcrUploadContentState extends State<OcrUploadContent> {
     } finally {
       setState(() => _isSaving = false);
     }
+  }
+}
+
+class _DocTypeChip extends StatelessWidget {
+  final String label;
+  final bool isSelected;
+  final VoidCallback onSelected;
+
+  const _DocTypeChip({
+    required this.label,
+    required this.isSelected,
+    required this.onSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ActionChip(
+      label: Text(label),
+      backgroundColor: isSelected ? Colors.blue[800] : Colors.grey[200],
+      labelStyle: TextStyle(
+        color: isSelected ? Colors.white : Colors.black,
+      ),
+      onPressed: onSelected,
+    );
   }
 }

@@ -19,7 +19,7 @@ class DashboardCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: MediaQuery.of(context).size.width * 0.18,
+      width: MediaQuery.of(context).size.width * 0.22,
       child: Card(
         color: Colors.blueGrey[50], // Light purple background
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
