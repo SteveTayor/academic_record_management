@@ -1,9 +1,11 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:provider/provider.dart';
+import 'package:path_provider/path_provider.dart';
 import '../../../../core/model/document_model.dart';
 import '../../../../core/providers/app_provider.dart';
 import '../../../../core/service/document_service.dart';
@@ -138,25 +140,66 @@ class _OcrUploadContentState extends State<OcrUploadContent> {
       return;
     }
 
-    // Assuming _isProcessing is a state variable
     setState(() => _isProcessing = true);
 
     try {
       final file = pickResult.files.single;
       final bytes = file.bytes;
-      if (bytes == null) throw Exception('File bytes not available.');
+      if (bytes == null && !kIsWeb) {
+        // On mobile, bytes might be null but we have the path
+        if (file.path == null) throw Exception('File path not available.');
 
-      final recognizedText = await _performWebOCR(bytes);
+        // Process from file path directly
+        final recognizedText = await FlutterTesseractOcr.extractText(
+          file.path!,
+          language: 'eng',
+          args: {
+            "psm": "4",
+            "preserve_interword_spaces": "1",
+          },
+        );
 
-      setState(() {
-        _extractedText = recognizedText;
-        _extractedTextController.text = recognizedText;
-        _isPreviewVisible = true;
-      });
+        setState(() {
+          _extractedText = recognizedText;
+          _extractedTextController.text = recognizedText;
+          _isPreviewVisible = true;
+        });
 
-      Provider.of<AppState>(context, listen: false)
-        ..setExtractedText(recognizedText)
-        ..setDocumentType(_selectedDocType);
+        Provider.of<AppState>(context, listen: false)
+          ..setExtractedText(recognizedText)
+          ..setDocumentType(_selectedDocType);
+      } else if (bytes != null) {
+        String recognizedText;
+
+        if (kIsWeb) {
+          // For web, use the JavaScript function
+          recognizedText = await _performWebOCR(bytes);
+        } else {
+          // For mobile, save bytes to temp file and use Tesseract
+          final tempPath = await _saveBytesToTempFile(bytes, file.name);
+          recognizedText = await FlutterTesseractOcr.extractText(
+            tempPath,
+            language: 'eng',
+            args: {
+              "psm": "4",
+              "preserve_interword_spaces": "1",
+            },
+          );
+        }
+
+        setState(() {
+          _extractedText = recognizedText;
+          _extractedTextController.text = recognizedText;
+          _isPreviewVisible = true;
+        });
+
+        Provider.of<AppState>(context, listen: false)
+          ..setExtractedText(recognizedText)
+          ..setDocumentType(_selectedDocType);
+      } else {
+        throw Exception(
+            'Cannot process file: neither bytes nor path available.');
+      }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -170,90 +213,28 @@ class _OcrUploadContentState extends State<OcrUploadContent> {
   }
 
   Future<String> _performWebOCR(Uint8List bytes) async {
-    try {
-      // Wait for Tesseract to be available
-      await _waitForTesseract();
+    // Convert the image bytes to a base64 string
+    final base64Image = base64Encode(bytes);
+    final base64Uri = 'data:image/png;base64,$base64Image';
 
-      // Convert image bytes to base64 and create an image element
-      final base64Image = base64Encode(bytes);
-      final img = html.ImageElement()
-        ..src = 'data:image/png;base64,$base64Image';
+    // Create a map of OCR parameters to pass to JavaScript
+    final Map<String, dynamic> ocrParams = {
+      'language': 'eng',
+      'args': {'psm': '4', 'preserve_interword_spaces': '1'}
+    };
 
-      // Wait for the image to load
-      await img.onLoad.first;
-      if (img.naturalWidth == 0 || img.naturalHeight == 0) {
-        throw Exception('Image failed to load properly.');
-      }
+    // Create a completer to handle the async JavaScript call
+    final completer = Completer<String>();
 
-      // Draw the image on a canvas
-      final canvas = html.CanvasElement(
-          width: img.naturalWidth, height: img.naturalHeight);
-      final ctx = canvas.context2D;
-      ctx.drawImage(img, 0, 0);
+    // Call the JavaScript function and handle the promise
+    final promise = js_util.callMethod(
+        html.window, '_extractText', [base64Uri, js_util.jsify(ocrParams)]);
 
-      // Initialize a Tesseract worker
-      final worker = js.context['Tesseract'].callMethod('createWorker', []);
-      await js_util.promiseToFuture(worker.callMethod('load', []));
-      await js_util.promiseToFuture(worker.callMethod('loadLanguage', ['eng']));
-      await js_util.promiseToFuture(worker.callMethod('initialize', ['eng']));
+    // Handle the promise resolution
+    promise.callMethod('then',
+        [js.allowInterop((result) => completer.complete(result.toString()))]);
 
-      // Perform OCR
-      final result = await js_util
-          .promiseToFuture(worker.callMethod('recognize', [canvas]));
-      final text =
-          js_util.getProperty(js_util.getProperty(result, 'data'), 'text');
-
-      // Clean up the worker
-      await js_util.promiseToFuture(worker.callMethod('terminate', []));
-
-      return text as String? ?? '';
-    } catch (e) {
-      print('OCR Error: $e');
-      rethrow;
-    }
-  }
-
-// Helper function to wait for Tesseract to load
-  Future<void> _waitForTesseract(
-      {int retries = 10,
-      Duration delay = const Duration(milliseconds: 500)}) async {
-    for (int i = 0; i < retries; i++) {
-      if (js.context['Tesseract'] != null) {
-        return; // Tesseract is ready
-      }
-      await Future.delayed(delay); // Wait before retrying
-    }
-    throw Exception('Tesseract.js failed to load after multiple attempts.');
-  }
-
-// JavaScript interoperability helper functions
-  dynamic _callJsMethod(String methodPath, [List<dynamic> args = const []]) {
-    final List<String> parts = methodPath.split('.');
-
-    dynamic obj = html.window;
-    for (final part in parts.sublist(0, parts.length - 1)) {
-      obj = obj[part];
-      if (obj == null) {
-        throw Exception('JavaScript object "$part" not found');
-      }
-    }
-
-    final method = parts.last;
-    return obj.callMethod(method, args);
-  }
-
-  Future<dynamic> _callJsPromiseMethod(
-      dynamic jsObject, String method, List<dynamic> args) async {
-    // Call the method and get a Promise
-    final promise = jsObject.callMethod(method, args);
-
-    // Convert Promise to Future
-    final completer = Completer<dynamic>();
-
-    // Set up then/catch handlers
-    promise.callMethod(
-        'then', [js.allowInterop((result) => completer.complete(result))]);
-
+    // Handle any errors
     promise.callMethod('catch', [
       js.allowInterop((error) => completer.completeError(error.toString()))
     ]);
@@ -261,27 +242,22 @@ class _OcrUploadContentState extends State<OcrUploadContent> {
     return completer.future;
   }
 
-  dynamic _getJsProperty(dynamic jsObject, String property) {
-    return jsObject[property];
-  }
-
-// Function that creates a JavaScript logger callback
-  dynamic _createJsLoggerCallback() {
-    return js.allowInterop((progress) {
-      print(
-          'Tesseract progress: ${progress['status']} (${progress['progress']?.toStringAsFixed(2) ?? 'N/A'})');
-    });
-  }
-
 // Helper for mobile platforms to save bytes to a temporary file
   Future<String> _saveBytesToTempFile(Uint8List bytes, String fileName) async {
-    // This implementation depends on your mobile platform
-    // You'll need to implement this differently for Android vs iOS
-    // For this example, we're skipping the implementation as it's not needed for web
-    throw UnimplementedError(
-        'Saving bytes to temp file is not implemented for this platform');
+    // Get the temporary directory
+    final tempDir = await getTemporaryDirectory();
+
+    // Create a unique filename to prevent conflicts
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    final tempFilePath = '${tempDir.path}/${timestamp}_$fileName';
+
+    // Write the bytes to the file
+    final file = File(tempFilePath);
+    await file.writeAsBytes(bytes);
+
+    return tempFilePath;
   }
-// Future<void> _pickAndProcessFile() async {
+  // Future<void> _pickAndProcessFile() async {
 //   final pickResult = await FilePicker.platform.pickFiles(
 //     type: FileType.custom,
 //     allowedExtensions: ['png', 'jpg', 'jpeg'],
