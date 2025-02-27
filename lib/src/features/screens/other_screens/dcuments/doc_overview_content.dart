@@ -1,19 +1,32 @@
-// Modified OverviewContent widget
 import 'package:flutter/material.dart';
-import '../../../../core/service/document_service.dart';
+import 'package:provider/provider.dart';
+import '../../../../core/providers/document_provider.dart';
 import '../student_folder/stu_folder.dart';
 
-class OverviewContent extends StatelessWidget {
+class OverviewContent extends StatefulWidget {
   final VoidCallback onOcrUploadPressed;
   final VoidCallback onSearchPressed;
 
-  OverviewContent({
-    super.key,
+  const OverviewContent({
+    Key? key,
     required this.onOcrUploadPressed,
     required this.onSearchPressed,
-  });
+  }) : super(key: key);
 
-  final DocumentService _documentService = DocumentService();
+  @override
+  State<OverviewContent> createState() => _OverviewContentState();
+}
+
+class _OverviewContentState extends State<OverviewContent> {
+  @override
+  void initState() {
+    super.initState();
+    // Fetch data when widget initializes
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<DocumentNavigationProvider>(context, listen: false)
+          .fetchAllUsers();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -38,7 +51,6 @@ class OverviewContent extends StatelessWidget {
   }
 
   Widget _buildHeaderCards(BuildContext context) {
-    // Keep your existing _buildHeaderCards implementation
     return Row(
       children: [
         Expanded(
@@ -48,7 +60,7 @@ class OverviewContent extends StatelessWidget {
             description:
                 'Convert scanned documents into searchable text using OCR technology',
             buttonText: 'Process Documents',
-            onPressed: onOcrUploadPressed,
+            onPressed: widget.onOcrUploadPressed,
             context: context,
           ),
         ),
@@ -60,7 +72,7 @@ class OverviewContent extends StatelessWidget {
             description:
                 'Search through processed documents using keywords and filters',
             buttonText: 'Search Documents',
-            onPressed: onSearchPressed,
+            onPressed: widget.onSearchPressed,
             context: context,
           ),
         ),
@@ -76,7 +88,6 @@ class OverviewContent extends StatelessWidget {
     required VoidCallback onPressed,
     required BuildContext context,
   }) {
-    // Keep your existing _buildInfoCard implementation
     return Container(
       width: MediaQuery.of(context).size.width * 0.25,
       padding: const EdgeInsets.all(16),
@@ -122,20 +133,37 @@ class OverviewContent extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Expanded(
-            child: FutureBuilder<List<Map<String, String>>>(
-              future: _documentService.fetchAllUsers(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
+            // Use Consumer to listen to provider changes
+            child: Consumer<DocumentNavigationProvider>(
+              builder: (context, provider, child) {
+                if (provider.isLoading) {
                   return const Center(child: CircularProgressIndicator());
                 }
-                if (snapshot.hasError) {
-                  return Center(child: Text('Error: ${snapshot.error}'));
+
+                if (provider.error != null) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text('Error: ${provider.error}'),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: () {
+                            provider.clearError();
+                            provider.fetchAllUsers();
+                          },
+                          child: const Text('Retry'),
+                        ),
+                      ],
+                    ),
+                  );
                 }
-                if (!snapshot.hasData || snapshot.data!.isEmpty) {
+
+                final users = provider.users;
+                if (users.isEmpty) {
                   return const Center(child: Text('No students found'));
                 }
 
-                final students = snapshot.data!;
                 return Container(
                   width: MediaQuery.of(context).size.width,
                   decoration: BoxDecoration(
@@ -148,20 +176,25 @@ class OverviewContent extends StatelessWidget {
                       DataColumn(label: Text('Matric Number')),
                       DataColumn(label: Text('Actions')),
                     ],
-                    rows: students.map((student) {
+                    rows: users.map((student) {
                       return DataRow(
                         cells: [
-                          DataCell(Text(student['name']!)),
-                          DataCell(Text(student['matricNumber']!)),
+                          DataCell(Text(student['name'] ?? 'Unknown')),
+                          DataCell(Text(student['matricNumber'] ?? 'Unknown')),
                           DataCell(
                             ElevatedButton(
                               onPressed: () {
+                                // Pre-fetch documents for this user
+                                provider.fetchDocumentsByUser(
+                                    student['matricNumber'] ?? '');
+
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
                                     builder: (context) => UserFolderScreen(
-                                      userName: student['name']!,
-                                      matricNumber: student['matricNumber']!,
+                                      userName: student['name'] ?? 'Unknown',
+                                      matricNumber:
+                                          student['matricNumber'] ?? '',
                                     ),
                                   ),
                                 );

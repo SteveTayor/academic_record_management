@@ -1,8 +1,10 @@
 import 'package:archival_system/src/features/screens/other_screens/document_overview_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 
 import '../../../core/model/document_model.dart';
+import '../../../core/providers/document_provider.dart';
 import '../../../core/service/document_service.dart';
 import '../../widgets/dashboard_card.dart';
 import '../../widgets/sidebar.dart';
@@ -445,57 +447,69 @@ class _DashboardPageState extends State<DashboardPage> {
   static const Color black = Colors.black;
   // Pagination state
   int _currentPage = 1;
-  int _rowsPerPage = 12; // default
-  List<DocumentModel> _allDocuments = [];
-  bool _isLoading = true;
-  bool _hasError = false;
+  int _rowsPerPage = 12;
   final DocumentService _documentService = DocumentService();
+  final DocumentNavigationProvider _documentProvider =
+      DocumentNavigationProvider();
 
   @override
   void initState() {
     super.initState();
-    _fetchAllDocuments();
+    Provider.of<DocumentNavigationProvider>(context, listen: false)
+        .fetchRecentDocuments(limit: 1000);
+    _loadDashboardData();
   }
 
-  Future<void> _fetchAllDocuments() async {
-    setState(() {
-      _isLoading = true;
-      _hasError = false;
-    });
-
-    try {
-      // Fetch all or a large chunk of documents.
-      // If you only want "recent", adjust your Firestore query accordingly.
-      final docs = await _documentService.fetchRecentDocuments(limit: 1000);
-      setState(() {
-        _allDocuments = docs;
-      });
-    } catch (e) {
-      setState(() {
-        _hasError = true;
-      });
-      debugPrint('Error fetching documents: $e');
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
-    }
+  Future<void> _loadDashboardData() async {
+    // Fetch the data using the provider
+    // await _documentProvider.fetchRecentDocuments(limit: 3);
+    await _documentProvider.fetchTotalDocumentsCount();
   }
+  // @override
+  // void initState() {
+  //   super.initState();
+  //   _fetchAllDocuments();
+  // }
 
-  Future<List<DocumentModel>> _fetchRecentDocuments() async {
-    try {
-      // Use the new method from DocumentService
-      return await _documentService.fetchRecentDocuments(limit: 3);
-    } catch (e) {
-      // Show a more helpful error that guides the user
-      if (e.toString().contains('index')) {
-        final indexUrl = _documentService.getIndexCreationUrl();
-        // You could show a dialog here with the URL
-        print('Index missing. Create it at: $indexUrl');
-      }
-      throw Exception('Error fetching recent documents: $e');
-    }
-  }
+  // Future<void> _fetchAllDocuments() async {
+  //   setState(() {
+  //     _isLoading = true;
+  //     _hasError = false;
+  //   });
+
+  //   try {
+  //     // Fetch all or a large chunk of documents.
+  //     // If you only want "recent", adjust your Firestore query accordingly.
+  //     final docs = await _documentService.fetchRecentDocuments(limit: 1000);
+  //     setState(() {
+  //       _allDocuments = docs;
+  //     });
+  //   } catch (e) {
+  //     setState(() {
+  //       _hasError = true;
+  //     });
+  //     debugPrint('Error fetching documents: $e');
+  //   } finally {
+  //     setState(() {
+  //       _isLoading = false;
+  //     });
+  //   }
+  // }
+
+  // Future<List<DocumentModel>> _fetchRecentDocuments() async {
+  //   try {
+  //     // Use the new method from DocumentService
+  //     return await _documentService.fetchRecentDocuments(limit: 3);
+  //   } catch (e) {
+  //     // Show a more helpful error that guides the user
+  //     if (e.toString().contains('index')) {
+  //       final indexUrl = _documentService.getIndexCreationUrl();
+  //       // You could show a dialog here with the URL
+  //       print('Index missing. Create it at: $indexUrl');
+  //     }
+  //     throw Exception('Error fetching recent documents: $e');
+  //   }
+  // }
 
   // this helper method to show a dialog when the index is missing
   void _showIndexMissingDialog(BuildContext context) {
@@ -541,42 +555,6 @@ class _DashboardPageState extends State<DashboardPage> {
       ),
     );
   }
-
-  // ----- MOCK DATA (Do not remove, only comment out) -----
-//  static const int _mockTotalDocuments = 45;
-//  static const int _mockRecentRetrievals = 5;
-//  static List<DocumentModel> _mockRecentDocuments = [
-//    DocumentModel(
-//      id: '1',
-//      userName: 'Samuel Adeokun',
-//      matricNumber: '220118',
-//      level: '300 Level',
-//      documentType: 'Transcript',
-//      text: 'Sample text',
-//      timestamp: DateTime.now().subtract(const Duration(hours: 2)),
-//      fileUrl: '',
-//    ),
-//    DocumentModel(
-//      id: '2',
-//      userName: 'Janet Slyia',
-//      matricNumber: '202989',
-//      level: '200 Level',
-//      documentType: 'Letter',
-//      text: 'Sample text',
-//      timestamp: DateTime.now().subtract(const Duration(days: 1)),
-//      fileUrl: '',
-//    ),
-//    DocumentModel(
-//      id: '3',
-//      userName: 'Michael Jonathan',
-//      matricNumber: '203323',
-//      level: '400 Level',
-//      documentType: 'Report',
-//      text: 'Sample text',
-//      timestamp: DateTime.now().subtract(const Duration(days: 3)),
-//      fileUrl: '',
-//    ),
-//  ];
 
   @override
   Widget build(BuildContext context) {
@@ -625,72 +603,91 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Widget _buildDashboardMetrics(BuildContext context) {
-    return FutureBuilder<Map<String, dynamic>>(
-      future: _fetchDashboardMetrics(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        if (snapshot.hasError) {
-          return Center(
-              child: Text('Error loading metrics: ${snapshot.error}'));
-        }
-        final data = snapshot.data ?? {};
-        final totalDocuments = data['totalDocuments'] ?? 0;
-        final recentRetrievals = data['recentRetrievals'] ?? 0;
+    return ChangeNotifierProvider.value(
+      value: _documentProvider,
+      child: Consumer<DocumentNavigationProvider>(
+        builder: (context, provider, _) {
+          if (provider.isLoading) {
+            return const Center(child: CircularProgressIndicator());
+          }
 
-        return Wrap(
-          spacing: 16,
-          runSpacing: 16,
-          children: [
-            DashboardCard(
-              icon: Icons.folder,
-              title: 'Total Documents',
-              subtitle: '$totalDocuments files stored',
-              buttonText: 'View All',
-              onPressed: () {
-                _showSnack('View All Documents clicked');
-              },
-            ).animate().fadeIn(duration: 400.ms),
-            DashboardCard(
-              icon: Icons.refresh,
-              title: 'Recent Retrievals',
-              subtitle: '$recentRetrievals documents this week',
-              buttonText: 'See Details',
-              onPressed: () {
-                _showSnack('See Recent Retrievals clicked');
-              },
-            ).animate().fadeIn(duration: 400.ms),
-          ],
-        );
-      },
+          if (provider.error != null) {
+            return Center(child: Text('Error: ${provider.error}'));
+          }
+          // return FutureBuilder<Map<String, dynamic>>(
+          //   future: _fetchDashboardMetrics(),
+          //   builder: (context, snapshot) {
+          //     if (snapshot.connectionState == ConnectionState.waiting) {
+          //       return const Center(child: CircularProgressIndicator());
+          //     }
+          //     if (snapshot.hasError) {
+          //       return Center(
+          //           child: Text('Error loading metrics: ${snapshot.error}'));
+          //     }
+          // final data = snapshot.data ?? {};
+          // final totalDocuments = data['totalDocuments'] ?? 0;
+          // final recentRetrievals = data['recentRetrievals'] ?? 0;
+
+          final totalDocumentsCount = provider.totalDocumentsCount;
+          // Calculate metrics
+          final recentRetrievals = (provider.totalDocumentsCount * 0.1).round();
+          return Wrap(
+            spacing: 16,
+            runSpacing: 16,
+            children: [
+              DashboardCard(
+                icon: Icons.folder,
+                title: 'Total Documents',
+                subtitle: '$totalDocumentsCount files stored',
+                buttonText: 'View All',
+                onPressed: () {
+                  _showSnack('View All Documents clicked');
+                },
+              ).animate().fadeIn(duration: 400.ms),
+              DashboardCard(
+                icon: Icons.refresh,
+                title: 'Recent Retrievals',
+                subtitle: '$recentRetrievals documents this week',
+                buttonText: 'See Details',
+                onPressed: () {
+                  _showSnack('See Recent Retrievals clicked');
+                },
+              ).animate().fadeIn(duration: 400.ms),
+            ],
+          );
+        },
+      ),
     );
   }
 
   Widget _buildRecentDocumentAccess(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Recent Document Access',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: black,
+    return Consumer<DocumentNavigationProvider>(
+        builder: (context, recentProvider, _) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Recent Document Access',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: black,
+            ),
           ),
-        ),
-        const SizedBox(height: 8),
-        // Decide what to show based on loading/error states
-        if (_isLoading)
-          const Center(child: CircularProgressIndicator())
-        else if (_hasError)
-          const Center(child: Text('Error loading recent documents.'))
-        else if (_allDocuments.isEmpty)
-          const Center(child: Text('No recent documents found'))
-        else
-          _buildPaginatedTable(),
-      ],
-    );
+          const SizedBox(height: 8),
+
+          // Use provider's state variables instead of local ones
+          if (recentProvider.isLoading)
+            const Center(child: CircularProgressIndicator())
+          else if (recentProvider.error != null)
+            Center(child: Text('Error: ${recentProvider.error}'))
+          else if (recentProvider.recentDocuments.isEmpty)
+            const Center(child: Text('No recent documents found'))
+          else
+            _buildPaginatedTable(context, recentProvider.recentDocuments),
+        ],
+      );
+    });
   }
 
   // Widget _buildRecentDocumentAccess(BuildContext context) {
@@ -798,15 +795,16 @@ class _DashboardPageState extends State<DashboardPage> {
   //   );
   // }
 
-  Widget _buildPaginatedTable() {
+  Widget _buildPaginatedTable(
+      BuildContext context, List<DocumentModel> documents) {
     // 1. Calculate total pages
-    final totalDocs = _allDocuments.length;
+    final totalDocs = documents.length;
     final totalPages = (totalDocs / _rowsPerPage).ceil();
 
     // 2. Determine the slice of documents for current page
     final startIndex = (_currentPage - 1) * _rowsPerPage;
     final endIndex = startIndex + _rowsPerPage;
-    final displayedDocs = _allDocuments.sublist(
+    final displayedDocs = documents.sublist(
       startIndex,
       endIndex > totalDocs ? totalDocs : endIndex,
     );
@@ -946,48 +944,14 @@ class _DashboardPageState extends State<DashboardPage> {
 
   // Future<Map<String, dynamic>> _fetchDashboardMetrics() async {
   //   try {
-  //     final querySnapshot =
-  //         await _documentService.firestore.collection('univault').get();
-  //     int totalDocuments = 0;
-  //     for (var doc in querySnapshot.docs) {
-  //       final data = doc.data();
-  //       totalDocuments += (data['totalDocuments'] as int? ?? 0);
-  //     }
+  //     final totalDocuments = await _documentService.fetchTotalDocumentsCount();
   //     final recentRetrievals = (totalDocuments * 0.1).round();
   //     return {
   //       'totalDocuments': totalDocuments,
-  //       'recentRetrievals': recentRetrievals
+  //       'recentRetrievals': recentRetrievals,
   //     };
   //   } catch (e) {
-  //     throw Exception('Error fetching dashboard metrics: $e');
-  //   }
-  // }
-  Future<Map<String, dynamic>> _fetchDashboardMetrics() async {
-    try {
-      final totalDocuments = await _documentService.fetchTotalDocumentsCount();
-      final recentRetrievals = (totalDocuments * 0.1).round();
-      return {
-        'totalDocuments': totalDocuments,
-        'recentRetrievals': recentRetrievals,
-      };
-    } catch (e) {
-      throw Exception("Error fetching dashboard metrics: $e");
-    }
-  }
-
-  // Future<List<DocumentModel>> _fetchRecentDocuments() async {
-  //   try {
-  //     final querySnapshot = await _documentService.firestore
-  //         .collectionGroup('documents')
-  //         .orderBy('timestamp', descending: true)
-  //         .limit(3)
-  //         .get();
-
-  //     return querySnapshot.docs
-  //         .map((doc) => DocumentModel.fromMap(doc.id, doc.data()))
-  //         .toList();
-  //   } catch (e) {
-  //     throw Exception('Error fetching recent documents: $e');
+  //     throw Exception("Error fetching dashboard metrics: $e");
   //   }
   // }
 
@@ -1015,7 +979,7 @@ class _DashboardPageState extends State<DashboardPage> {
     } else if (menu == 'Users') {
       // TODO: Handle navigation to Users screen.
       // Navigator.push(context, MaterialPageRoute(builder: (_) => UserFolderScreen()));
-      // _showSnack('Navigating to Users screen');
+      ; // _showSnack('Navigating to Users screen');
     }
   }
 }

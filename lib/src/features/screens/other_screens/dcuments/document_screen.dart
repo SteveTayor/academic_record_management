@@ -47,7 +47,7 @@ class _DocumentOverviewScreenState extends State<DocumentOverviewScreen> {
                   case 'search':
                     return MaterialPageRoute(
                       builder: (_) => SearchScreen(
-                        documentService: documentService,
+                        // documentService: documentService,
                         selectedMenu: 'Documents',
                         onMenuSelected: (menu) =>
                             _onSidebarMenuSelected(menu, context),

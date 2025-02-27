@@ -3,96 +3,282 @@ import 'package:flutter/material.dart';
 import '../model/document_model.dart';
 import '../service/document_service.dart';
 
-// class DocumentProvider extends ChangeNotifier {
-//   final DocumentService _documentService = DocumentService();
-
-//   List<Map<String, String>> _students = [];
-//   List<String> _levels = [];
-//   List<DocumentModel> _documents = [];
-
-//   List<Map<String, String>> get students => _students;
-//   List<String> get levels => _levels;
-//   List<DocumentModel> get documents => _documents;
-
-//   Future<void> loadStudents() async {
-//     _students = await _documentService.fetchAllUsers();
-//     notifyListeners();
-//   }
-
-//   Future<void> loadLevels(String matricNumber) async {
-//     _levels = await _documentService.fetchLevelsForUser(matricNumber);
-//     notifyListeners();
-//   }
-
-//   Future<void> loadDocuments(String matricNumber, String level) async {
-//     _documents =
-//         await _documentService.fetchDocuments(matricNumber, level: level);
-//     notifyListeners();
-//   }
-// }
-// DocumentNavigationProvider.dart
 class DocumentNavigationProvider extends ChangeNotifier {
   final DocumentService _documentService = DocumentService();
+  // State variables
+  List<Map<String, String>> _users = [];
+  List<DocumentModel> _documents = [];
+  List<DocumentModel> _recentDocuments = [];
+  List<DocumentModel> _searchResults = [];
+  Map<String, List<String>> _levelsCache = {};
+  int _totalDocumentsCount = 0;
+  bool _isLoading = false;
+  String? _error;
 
-  List<Map<String, String>>? _students;
-  List<String>? _currentLevels;
-  List<DocumentModel>? _currentDocuments;
-  String? _currentMatricNumber;
-  String? _currentLevel;
+  // Pagination for search results
+  bool _hasMoreSearchResults = true;
+  String? _lastDocumentId;
 
-  List<Map<String, String>>? get students => _students;
-  List<String>? get currentLevels => _currentLevels;
-  List<DocumentModel>? get currentDocuments => _currentDocuments;
-  String? get currentMatricNumber => _currentMatricNumber;
-  String? get currentLevel => _currentLevel;
+  // Getters
+  List<Map<String, String>> get users => _users;
+  List<DocumentModel> get documents => _documents;
+  List<DocumentModel> get recentDocuments => _recentDocuments;
+  List<DocumentModel> get searchResults => _searchResults;
+  int get totalDocumentsCount => _totalDocumentsCount;
+  bool get isLoading => _isLoading;
+  String? get error => _error;
+  bool get hasMoreSearchResults => _hasMoreSearchResults;
 
-  Future<void> loadStudents() async {
+  // Fetch all users from Firestore
+  Future<void> fetchAllUsers() async {
     try {
-      _students = await _documentService.fetchAllUsers();
-      notifyListeners();
+      _setLoading(true);
+      _users = await _documentService.fetchAllUsers();
+      _setLoading(false);
     } catch (e) {
-      print('Error loading students: $e');
-      _students = [];
-      notifyListeners();
+      _handleError('Error fetching users: $e');
     }
   }
 
-  Future<void> selectStudent(String matricNumber) async {
-    _currentMatricNumber = matricNumber;
-    _currentLevel = null;
-    _currentDocuments = null;
-
+  // Fetch levels for a specific user
+  Future<List<String>> fetchLevelsForUser(String matricNumber) async {
     try {
-      _currentLevels = await _documentService.fetchLevelsForUser(matricNumber);
-      notifyListeners();
+      // Check cache first
+      if (_levelsCache.containsKey(matricNumber)) {
+        return _levelsCache[matricNumber]!;
+      }
+
+      _setLoading(true);
+      final levels = await _documentService.fetchLevelsForUser(matricNumber);
+      _levelsCache[matricNumber] = levels;
+      _setLoading(false);
+      return levels;
     } catch (e) {
-      print('Error loading levels: $e');
-      _currentLevels = [];
-      notifyListeners();
+      _handleError('Error fetching levels: $e');
+      return [];
     }
   }
 
-  Future<void> selectLevel(String level) async {
-    if (_currentMatricNumber == null) return;
-
-    _currentLevel = level;
-
+  // Fetch documents for a specific user
+  Future<void> fetchDocumentsByUser(String matricNumber) async {
     try {
-      _currentDocuments = await _documentService
-          .fetchDocuments(_currentMatricNumber!, level: level);
-      notifyListeners();
+      _setLoading(true);
+      _documents = await _documentService.fetchDocumentsByUser(matricNumber);
+      _setLoading(false);
     } catch (e) {
-      print('Error loading documents: $e');
-      _currentDocuments = [];
-      notifyListeners();
+      _handleError('Error fetching documents: $e');
     }
   }
 
-  void clearNavigation() {
-    _currentMatricNumber = null;
-    _currentLevel = null;
-    _currentLevels = null;
-    _currentDocuments = null;
+  // Fetch documents for a specific level
+  Future<void> fetchDocumentsForLevel(String matricNumber, String level) async {
+    try {
+      _setLoading(true);
+      _documents =
+          await _documentService.fetchDocuments(matricNumber, level: level);
+      _setLoading(false);
+    } catch (e) {
+      _handleError('Error fetching documents for level: $e');
+    }
+  }
+
+  // Fetch recent documents with pagination support
+  Future<void> fetchRecentDocuments({int limit = 10, int offset = 0}) async {
+    try {
+      _setLoading(true);
+      final results = await _documentService.fetchRecentDocuments(
+        limit: limit,
+        // startAfterDocId: offset > 0 ? _lastDocumentId : null,
+      );
+
+      if (results.isNotEmpty) {
+        _lastDocumentId = results.last.id;
+
+        if (offset == 0) {
+          _recentDocuments = results;
+        } else {
+          _recentDocuments = [..._recentDocuments, ...results];
+        }
+      }
+
+      // If fewer documents returned than requested, we've reached the end
+      if (results.length < limit) {
+        _hasMoreSearchResults = false;
+      }
+
+      _setLoading(false);
+    } catch (e) {
+      _handleError('Error fetching recent documents: $e');
+    }
+  }
+
+  // Fetch total documents count
+  Future<void> fetchTotalDocumentsCount() async {
+    try {
+      _setLoading(true);
+      _totalDocumentsCount = await _documentService.fetchTotalDocumentsCount();
+      _setLoading(false);
+    } catch (e) {
+      _handleError('Error fetching total documents count: $e');
+    }
+  }
+
+  // Search documents with proper server-side filtering and pagination
+  Future<void> searchDocuments({
+    required Map<String, dynamic> searchParams,
+    bool append = false,
+  }) async {
+    try {
+      _setLoading(true);
+
+      final results = await _documentService.searchDocuments(
+        query: searchParams['query'] as String?,
+        level: searchParams['level'] as String?,
+        documentType: searchParams['documentType'] as String?,
+        dateRange: searchParams['dateRange'] as String?,
+        limit: searchParams['itemsPerPage'] as int? ?? 20,
+        // startAfterDocId: append ? _lastDocumentId : null,
+      );
+
+      if (results.isNotEmpty) {
+        _lastDocumentId = results.last.id;
+
+        if (append) {
+          _searchResults = [..._searchResults, ...results];
+        } else {
+          _searchResults = results;
+          _hasMoreSearchResults = true; // Reset pagination for new search
+        }
+      }
+
+      // If fewer documents returned than requested, we've reached the end
+      if (results.length < (searchParams['itemsPerPage'] as int? ?? 20)) {
+        _hasMoreSearchResults = false;
+      }
+
+      _setLoading(false);
+    } catch (e) {
+      _handleError('Error searching documents: $e');
+    }
+  }
+
+  // Clear search results
+  void clearSearch() {
+    _searchResults = [];
+    _lastDocumentId = null;
+    _hasMoreSearchResults = true;
     notifyListeners();
+  }
+
+  // Save a document
+  Future<void> saveDocument(DocumentModel document) async {
+    try {
+      _setLoading(true);
+      await _documentService.saveDocument(document);
+
+      // Update local state
+      _documents = [..._documents, document];
+      _totalDocumentsCount++;
+
+      // Update recent documents if necessary
+      if (_recentDocuments.isNotEmpty) {
+        _recentDocuments = [document, ..._recentDocuments];
+        // Keep the recent documents list at a reasonable size
+        if (_recentDocuments.length > 20) {
+          _recentDocuments = _recentDocuments.sublist(0, 20);
+        }
+      }
+
+      _setLoading(false);
+    } catch (e) {
+      _handleError('Error saving document: $e');
+    }
+  }
+
+  // Delete a document
+  Future<void> deleteDocument(DocumentModel document) async {
+    try {
+      _setLoading(true);
+      await _documentService.deleteDocument(
+          document.id, document.matricNumber, document.level);
+
+      // Update local state
+      _documents = _documents.where((doc) => doc.id != document.id).toList();
+      _recentDocuments =
+          _recentDocuments.where((doc) => doc.id != document.id).toList();
+      _searchResults =
+          _searchResults.where((doc) => doc.id != document.id).toList();
+      _totalDocumentsCount--;
+
+      _setLoading(false);
+    } catch (e) {
+      _handleError('Error deleting document: $e');
+    }
+  }
+
+  // Update a document
+  Future<void> updateDocument(DocumentModel document) async {
+    try {
+      _setLoading(true);
+      await _documentService.updateDocument(document);
+
+      // Update local state
+      _documents = _documents
+          .map((doc) => doc.id == document.id ? document : doc)
+          .toList();
+
+      _recentDocuments = _recentDocuments
+          .map((doc) => doc.id == document.id ? document : doc)
+          .toList();
+
+      _searchResults = _searchResults
+          .map((doc) => doc.id == document.id ? document : doc)
+          .toList();
+
+      _setLoading(false);
+    } catch (e) {
+      _handleError('Error updating document: $e');
+    }
+  }
+
+  // Fetch a single document by ID
+  Future<DocumentModel?> fetchDocumentById(
+      String documentId, String matricNumber, String level) async {
+    try {
+      _setLoading(true);
+      final document = await _documentService.fetchDocumentById(
+          documentId, matricNumber, level);
+      _setLoading(false);
+      return document;
+    } catch (e) {
+      _handleError('Error fetching document: $e');
+      return null;
+    }
+  }
+
+  // Helper function to set loading state
+  void _setLoading(bool loading) {
+    _isLoading = loading;
+    notifyListeners();
+  }
+
+  // Helper function to handle errors
+  void _handleError(String errorMessage) {
+    _error = errorMessage;
+    _isLoading = false;
+    notifyListeners();
+  }
+
+  // Clear any error
+  void clearError() {
+    _error = null;
+    notifyListeners();
+  }
+
+  // Load more search results with pagination
+  Future<void> loadMoreSearchResults(Map<String, dynamic> searchParams) async {
+    if (_hasMoreSearchResults && !_isLoading) {
+      await searchDocuments(searchParams: searchParams, append: true);
+    }
   }
 }

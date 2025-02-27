@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import 'package:path_provider/path_provider.dart';
 import '../../../../core/model/document_model.dart';
 import '../../../../core/providers/app_provider.dart';
+import '../../../../core/providers/document_provider.dart';
 import '../../../../core/service/document_service.dart';
 // import 'dart:js' as js;
 import 'dart:js_util' as js_util;
@@ -56,27 +57,63 @@ class _OcrUploadContentState extends State<OcrUploadContent> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.popUntil(
-                        context, (route) => route.settings.name == 'overview');
-                  },
-                  child: const Text('Documents'),
-                ),
-                const Text(' > OCR Upload'),
-              ],
-            ),
-            const SizedBox(height: 16),
-            _isPreviewVisible ? _buildPreviewUI() : _buildUploadUI(),
-          ],
+    return Scaffold(
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  InkWell(
+                    onTap: () {
+                      // Navigate to Documents page
+                      Navigator.of(context).pop();
+                    },
+                    child: Text(
+                      'Documents',
+                      style: TextStyle(
+                        color: Colors.blue[800],
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  const Icon(Icons.chevron_right, size: 16),
+                  const SizedBox(width: 8),
+                  InkWell(
+                    onTap: () {
+                      // Navigator.of(context).pop();
+                    },
+                    child: Text(
+                      'OCR Upload',
+                      style: TextStyle(
+                        color: Colors.blue[800],
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+
+              // Row(
+              //   children: [
+              //     TextButton(
+              //       onPressed: () {
+              //         Navigator.popUntil(
+              //             context, (route) => route.settings.name == 'overview');
+              //       },
+              //       child: const Text('Documents'),
+              //     ),
+              //     const Text(' > OCR Upload'),
+              //   ],
+              // ),
+              const SizedBox(height: 16),
+              _isPreviewVisible ? _buildPreviewUI() : _buildUploadUI(),
+            ],
+          ),
         ),
       ),
     );
@@ -710,7 +747,7 @@ class _OcrUploadContentState extends State<OcrUploadContent> {
   //   );
   // }
 
-  Future<void> _saveDocument() async {
+  Future _saveDocument() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isSaving = true);
@@ -718,30 +755,23 @@ class _OcrUploadContentState extends State<OcrUploadContent> {
     try {
       final document = DocumentModel(
         id: '',
-        userName: _userNameController.text, // Assuming you have this
-        matricNumber: _matricNumberController.text, // Assuming you have this
-        level: _selectedLevel.replaceAll(' Level', ''), // Adjust as needed
-        text: _extractedTextController.text, // Use the edited text
+        userName: _userNameController.text,
+        matricNumber: _matricNumberController.text,
+        level: _selectedLevel, // Don't modify the level format here
+        text: _extractedTextController.text,
         documentType: _selectedDocType,
         fileUrl: '',
         timestamp: DateTime.now(),
       );
-      // Save the document (e.g., via a provider or service)
-      // Provider.of<AppState>(context, listen: false).setCurrentDocument(document);
-      // final document = DocumentModel(
-      //   id: '',
-      //   userName: _userNameController.text,
-      //   matricNumber: _matricNumberController.text,
-      //   level: _selectedLevel.replaceAll(' Level', ''),
-      //   text: _extractedText,
-      //   documentType: _selectedDocType,
-      //   fileUrl: '',
-      //   timestamp: DateTime.now(),
-      // );
 
-      await _documentService.saveDocument(document);
+      // Using the provider instead of the service directly
+      await Provider.of<DocumentNavigationProvider>(context, listen: false)
+          .saveDocument(document);
+
+      // Set current document
       Provider.of<AppState>(context, listen: false)
           .setCurrentDocument(document);
+
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Document saved successfully')),
