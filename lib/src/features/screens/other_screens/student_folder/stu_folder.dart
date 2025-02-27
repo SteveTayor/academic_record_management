@@ -1,18 +1,15 @@
-// New LevelDocumentsScreen
+// Modified UserFolderScreen
 import 'package:flutter/material.dart';
-import '../../../../core/model/document_model.dart';
 import '../../../../core/service/document_service.dart';
-import '../dcuments/document_detail_screen.dart';
+import 'student_level_doc_screen.dart'; // We'll create this next
 
-class LevelDocumentsScreen extends StatelessWidget {
+class UserFolderScreen extends StatelessWidget {
   final String userName;
   final String matricNumber;
-  final String level;
 
-  LevelDocumentsScreen({
+  UserFolderScreen({
     required this.userName,
     required this.matricNumber,
-    required this.level,
     super.key,
   });
 
@@ -22,14 +19,14 @@ class LevelDocumentsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('$level Documents'),
+        title: Text('$userName Folders'),
       ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildBreadcrumb(context),
           _buildTitle(),
-          _buildDocumentsList(),
+          _buildLevelFoldersList(),
         ],
       ),
     );
@@ -42,30 +39,30 @@ class LevelDocumentsScreen extends StatelessWidget {
         children: [
           GestureDetector(
             onTap: () => Navigator.pop(context),
-            child: const Text('Back to Levels',
+            child: const Text('Main Folders',
                 style: TextStyle(color: Colors.blue)),
           ),
           const Icon(Icons.chevron_right),
-          Text('$userName - $level'),
+          Text('$userName ($matricNumber)'),
         ],
       ),
     );
   }
 
   Widget _buildTitle() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+    return const Padding(
+      padding: EdgeInsets.symmetric(horizontal: 16.0),
       child: Text(
-        '$level Documents',
-        style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+        'Academic Levels',
+        style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
       ),
     );
   }
 
-  Widget _buildDocumentsList() {
+  Widget _buildLevelFoldersList() {
     return Expanded(
-      child: FutureBuilder<List<DocumentModel>>(
-        future: _documentService.fetchDocuments(matricNumber, level: level),
+      child: FutureBuilder<List<String>>(
+        future: _documentService.fetchLevelsForUser(matricNumber),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -75,30 +72,37 @@ class LevelDocumentsScreen extends StatelessWidget {
           }
           if (!snapshot.hasData || snapshot.data!.isEmpty) {
             return const Center(
-                child: Text('No documents found for this level'));
+                child: Text('No levels found for this student'));
           }
 
-          final documents = snapshot.data!;
+          final levels = snapshot.data!;
+          // Sort levels by numeric value
+          levels.sort((a, b) {
+            final aNum = int.tryParse(a.replaceAll(RegExp(r'[^\d]'), '')) ?? 0;
+            final bNum = int.tryParse(b.replaceAll(RegExp(r'[^\d]'), '')) ?? 0;
+            return aNum.compareTo(bNum);
+          });
+
           return ListView.builder(
             padding: const EdgeInsets.all(16.0),
-            itemCount: documents.length,
+            itemCount: levels.length,
             itemBuilder: (context, index) {
-              final document = documents[index];
               return Card(
                 margin: const EdgeInsets.only(bottom: 16),
                 child: ListTile(
-                  leading: _getDocumentIcon(document.documentType),
-                  title: Text(document.documentType,
+                  leading:
+                      const Icon(Icons.folder, color: Colors.amber, size: 40),
+                  title: Text(levels[index],
                       style: const TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle:
-                      Text('Processed: ${_formatDate(document.timestamp)}'),
-                  trailing: const Icon(Icons.arrow_forward_ios),
+                  subtitle: const Text('Click to view documents'),
                   onTap: () {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => DocumentDetailScreen(
-                          document: document,
+                        builder: (context) => LevelDocumentsScreen(
+                          userName: userName,
+                          matricNumber: matricNumber,
+                          level: levels[index],
                         ),
                       ),
                     );
@@ -110,30 +114,5 @@ class LevelDocumentsScreen extends StatelessWidget {
         },
       ),
     );
-  }
-
-  Widget _getDocumentIcon(String documentType) {
-    IconData iconData;
-    Color iconColor;
-
-    switch (documentType.toLowerCase()) {
-      case 'transcript':
-        iconData = Icons.school;
-        iconColor = Colors.blue;
-        break;
-      case 'letter':
-        iconData = Icons.mail;
-        iconColor = Colors.green;
-        break;
-      default:
-        iconData = Icons.description;
-        iconColor = Colors.grey;
-    }
-
-    return Icon(iconData, color: iconColor, size: 40);
-  }
-
-  String _formatDate(DateTime date) {
-    return '${date.day}/${date.month}/${date.year}';
   }
 }

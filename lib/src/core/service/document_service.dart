@@ -16,7 +16,7 @@ class DocumentService {
         throw Exception("User name and matric number cannot be empty.");
       }
       final userDoc =
-          _firestore.collection('univault').doc('student_$matricNumber');
+          _firestore.collection('univault').doc('${userName}_$matricNumber');
       final snapshot = await userDoc.get();
       if (!snapshot.exists) {
         await userDoc.set({
@@ -38,16 +38,26 @@ class DocumentService {
   Future<List<Map<String, String>>> fetchAllUsers() async {
     try {
       final querySnapshot = await _firestore.collection('univault').get();
+
       return querySnapshot.docs
           .map((doc) {
             final data = doc.data();
-            return {
-              'name': data['userName']?.toString() ?? 'Unknown',
-              'matricNumber': doc.id.replaceFirst('student_', ''),
-            };
+            final docId = doc.id;
+            // Split the ID to extract username and matric number
+            final parts = docId.split('_');
+            if (parts.length > 1) {
+              final matricNumber = parts.last;
+              return {
+                'name': data['userName']?.toString() ?? 'Unknown',
+                'matricNumber': matricNumber,
+              };
+            } else {
+              return null; // Not a user document
+            }
           })
-          .toList()
-          .cast<Map<String, String>>();
+          .where((item) => item != null) // Filter out non-user documents
+          .cast<Map<String, String>>()
+          .toList();
     } catch (e) {
       throw Exception("Error fetching users: $e");
     }
@@ -403,7 +413,6 @@ class DocumentService {
     }
   }
 
-  /// Fetch All Documents for a User
   Future<List<DocumentModel>> fetchDocuments(String matricNumber,
       {String? level}) async {
     try {
@@ -414,20 +423,30 @@ class DocumentService {
       final userDoc =
           _firestore.collection('univault').doc('student_$matricNumber');
 
-      QuerySnapshot<Map<String, dynamic>> snapshot;
       if (level != null) {
-        snapshot = await userDoc
+        final snapshot = await userDoc
             .collection('levels')
             .doc(level)
             .collection('documents')
             .get();
-      } else {
-        snapshot = await userDoc.collection('documents').get();
-      }
 
-      return snapshot.docs
-          .map((doc) => DocumentModel.fromMap(doc.id, doc.data()))
-          .toList();
+        return snapshot.docs
+            .map((doc) => DocumentModel.fromMap(doc.id, doc.data()))
+            .toList();
+      } else {
+        // Fetch all documents across all levels
+        final levelsSnapshot = await userDoc.collection('levels').get();
+        List<DocumentModel> allDocuments = [];
+
+        for (var levelDoc in levelsSnapshot.docs) {
+          final docsSnapshot =
+              await levelDoc.reference.collection('documents').get();
+          allDocuments.addAll(docsSnapshot.docs
+              .map((doc) => DocumentModel.fromMap(doc.id, doc.data())));
+        }
+
+        return allDocuments;
+      }
     } catch (e) {
       throw Exception("Error fetching documents: $e");
     }

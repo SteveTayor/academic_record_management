@@ -1,14 +1,19 @@
+// Modified OverviewContent widget
 import 'package:flutter/material.dart';
+import '../../../../core/service/document_service.dart';
+import '../student_folder/stu_folder.dart';
 
 class OverviewContent extends StatelessWidget {
   final VoidCallback onOcrUploadPressed;
   final VoidCallback onSearchPressed;
 
-  const OverviewContent({
+  OverviewContent({
     super.key,
     required this.onOcrUploadPressed,
     required this.onSearchPressed,
   });
+
+  final DocumentService _documentService = DocumentService();
 
   @override
   Widget build(BuildContext context) {
@@ -25,7 +30,7 @@ class OverviewContent extends StatelessWidget {
             const SizedBox(height: 16),
             _buildHeaderCards(context),
             const SizedBox(height: 24),
-            _buildRecentDocumentsTable(context),
+            _buildStudentsTable(context),
           ],
         ),
       ),
@@ -33,6 +38,7 @@ class OverviewContent extends StatelessWidget {
   }
 
   Widget _buildHeaderCards(BuildContext context) {
+    // Keep your existing _buildHeaderCards implementation
     return Row(
       children: [
         Expanded(
@@ -70,6 +76,7 @@ class OverviewContent extends StatelessWidget {
     required VoidCallback onPressed,
     required BuildContext context,
   }) {
+    // Keep your existing _buildInfoCard implementation
     return Container(
       width: MediaQuery.of(context).size.width * 0.25,
       padding: const EdgeInsets.all(16),
@@ -104,28 +111,7 @@ class OverviewContent extends StatelessWidget {
     );
   }
 
-  Widget _buildRecentDocumentsTable(BuildContext context) {
-    final documents = [
-      {
-        'fileName': 'Transcript.pdf',
-        'status': 'Processed',
-        'category': '300 Level',
-        'date': '2 hours ago'
-      },
-      {
-        'fileName': 'Letter.pdf',
-        'status': 'Processed',
-        'category': '200 Level',
-        'date': '1 day ago'
-      },
-      {
-        'fileName': 'Report.pdf',
-        'status': 'Processed',
-        'category': '400 Level',
-        'date': '3 days ago'
-      },
-    ];
-
+  Widget _buildStudentsTable(BuildContext context) {
     return Expanded(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -136,46 +122,59 @@ class OverviewContent extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Expanded(
-            child: Container(
-              width: MediaQuery.of(context).size.width,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8),
-                color: Colors.white,
-              ),
-              child: DataTable(
-                columns: const [
-                  DataColumn(label: Text('File Name')),
-                  DataColumn(label: Text('Status')),
-                  DataColumn(label: Text('Category')),
-                  DataColumn(label: Text('Date')),
-                  DataColumn(label: Text('Actions')),
-                ],
-                rows: documents.map((doc) {
-                  return DataRow(
-                    cells: [
-                      DataCell(Text(doc['fileName']!)),
-                      DataCell(Text(doc['status']!)),
-                      DataCell(Text(doc['category']!)),
-                      DataCell(Text(doc['date']!)),
-                      DataCell(
-                        Row(
-                          children: [
-                            IconButton(
-                              icon: const Icon(Icons.edit),
-                              onPressed: () => print('Edit ${doc['fileName']}'),
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.delete),
-                              onPressed: () =>
-                                  print('Delete ${doc['fileName']}'),
-                            ),
-                          ],
-                        ),
-                      ),
+            child: FutureBuilder<List<Map<String, String>>>(
+              future: _documentService.fetchAllUsers(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (snapshot.hasError) {
+                  return Center(child: Text('Error: ${snapshot.error}'));
+                }
+                if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                  return const Center(child: Text('No students found'));
+                }
+
+                final students = snapshot.data!;
+                return Container(
+                  width: MediaQuery.of(context).size.width,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    color: Colors.white,
+                  ),
+                  child: DataTable(
+                    columns: const [
+                      DataColumn(label: Text('Student Name')),
+                      DataColumn(label: Text('Matric Number')),
+                      DataColumn(label: Text('Actions')),
                     ],
-                  );
-                }).toList(),
-              ),
+                    rows: students.map((student) {
+                      return DataRow(
+                        cells: [
+                          DataCell(Text(student['name']!)),
+                          DataCell(Text(student['matricNumber']!)),
+                          DataCell(
+                            ElevatedButton(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => UserFolderScreen(
+                                      userName: student['name']!,
+                                      matricNumber: student['matricNumber']!,
+                                    ),
+                                  ),
+                                );
+                              },
+                              child: const Text('View Folders'),
+                            ),
+                          ),
+                        ],
+                      );
+                    }).toList(),
+                  ),
+                );
+              },
             ),
           ),
         ],
