@@ -1,10 +1,445 @@
+import 'package:archival_system/src/features/screens/other_screens/document_overview_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
-// lib/pages/dashboard_page.dart
+import '../../../core/model/document_model.dart';
+import '../../../core/service/document_service.dart';
+import '../../widgets/dashboard_card.dart';
+import '../../widgets/sidebar.dart';
+import '../other_screens/dcuments/document_screen.dart';
+import '../other_screens/document_view_screen.dart';
+import '../other_screens/ocr_screen.dart';
 
+// class DashboardPage extends StatefulWidget {
+//   const DashboardPage({Key? key}) : super(key: key);
 
-import '../../../core/model/activity_item.dart';
-import '../../../core/service/data_service.dart';
+//   @override
+//   State<DashboardPage> createState() => _DashboardPageState();
+// }
+
+// class _DashboardPageState extends State<DashboardPage> {
+//   static const Color lightblue = Color.fromARGB(255, 132, 132, 240);
+//   static const Color white = Colors.white;
+//   static Color blue = Colors.blue.shade700;
+//   static const Color black = Colors.black;
+
+//   final DocumentService _documentService = DocumentService();
+//   static const int _mockTotalDocuments = 45;
+//   static const int _mockRecentRetrievals = 5;
+//   static List<DocumentModel> _mockRecentDocuments = [
+//     DocumentModel(
+//       id: '1',
+//       userName: 'Samuel Adeokun',
+//       matricNumber: '220118',
+//       level: '300 Level',
+//       documentType: 'Transcript',
+//       text: 'Sample text',
+//       timestamp: DateTime.now().subtract(const Duration(hours: 2)),
+//       fileUrl: '',
+//     ),
+//     DocumentModel(
+//       id: '2',
+//       userName: 'Janet Slyia',
+//       matricNumber: '202989',
+//       level: '200 Level',
+//       documentType: 'Letter',
+//       text: 'Sample text',
+//       timestamp: DateTime.now().subtract(const Duration(days: 1)),
+//       fileUrl: '',
+//     ),
+//     DocumentModel(
+//       id: '3',
+//       userName: 'Michael Jonathan',
+//       matricNumber: '203323',
+//       level: '400 Level',
+//       documentType: 'Report',
+//       text: 'Sample text',
+//       timestamp: DateTime.now().subtract(const Duration(days: 3)),
+//       fileUrl: '',
+//     ),
+//   ];
+
+//   @override
+//   Widget build(BuildContext context) {
+//     return Scaffold(
+//       // Optional: keep an app bar or remove it if you want a full-screen approach
+//       // appBar: AppBar(
+//       //   title: const Text('Dashboard Overview'),
+//       //   centerTitle: true,
+//       //   backgroundColor: white,
+//       //   foregroundColor: black,
+//       //   elevation: 0,
+//       // ),
+//       backgroundColor: white,
+//       body: Row(
+//         children: [
+//           // 1) The Sidebar
+//           Sidebar(
+//             selectedMenu: 'Overview', // This page is "Overview"
+//             onMenuSelected: _onSidebarMenuSelected,
+//           ),
+//           // 2) Main content area
+//           Expanded(
+//             child: SingleChildScrollView(
+//               padding: const EdgeInsets.all(16.0),
+//               child: Column(
+//                 mainAxisAlignment: MainAxisAlignment.start,
+//                 crossAxisAlignment: CrossAxisAlignment.start,
+//                 children: [
+//                   SizedBox(height: 20),
+//                   const Text(
+//                     'Dashboard Overview',
+//                     style: TextStyle(
+//                       fontSize: 24,
+//                       fontWeight: FontWeight.bold,
+//                       color: black,
+//                     ),
+//                   ),
+//                   const SizedBox(height: 16),
+//                   _buildDashboardMetrics(context),
+//                   const SizedBox(height: 24),
+//                   // Center(child: _buildQuickActions()),
+//                   const SizedBox(height: 24),
+//                   _buildRecentDocumentAccess(context),
+//                 ],
+//               ),
+//             ),
+//           ),
+//         ],
+//       ),
+//     );
+//   }
+
+//   Widget _buildDashboardMetrics(BuildContext context) {
+//     return Wrap(
+//       spacing: 16,
+//       runSpacing: 16,
+//       children: [
+//         DashboardCard(
+//             icon: Icons.folder,
+//             title: 'Total Documents',
+//             subtitle: '$_mockTotalDocuments files stored',
+//             buttonText: 'View All',
+//             onPressed: () {
+//               // _showSnack('View All Documents clicked'),
+//             }),
+//         DashboardCard(
+//             icon: Icons.refresh,
+//             title: 'Recent Retrievals',
+//             subtitle: '$_mockRecentRetrievals documents this week',
+//             buttonText: 'See Details',
+//             onPressed: () {
+//               // _showSnack('See Recent Retrievals clicked'),
+//             }),
+//       ],
+//     );
+//   }
+
+//   Widget _buildRecentDocumentAccess(BuildContext context) {
+//     return Column(
+//       crossAxisAlignment: CrossAxisAlignment.start,
+//       children: [
+//         const Text(
+//           'Recent Document Access',
+//           style: TextStyle(
+//             fontSize: 18,
+//             fontWeight: FontWeight.bold,
+//             color: black,
+//           ),
+//         ),
+//         const SizedBox(height: 16),
+//         _buildRecentDocumentsTable(),
+//       ],
+//     );
+//   }
+
+//   Widget _buildRecentDocumentsTable() {
+//     return Container(
+//       width: MediaQuery.of(context).size.width,
+//       decoration: BoxDecoration(
+//         borderRadius: BorderRadius.circular(8),
+//         color: Colors.grey[100],
+//       ),
+//       child: DataTable(
+//         columnSpacing: 24,
+//         columns: const [
+//           DataColumn(
+//               label: Text('Document',
+//                   style: TextStyle(fontWeight: FontWeight.bold))),
+//           DataColumn(
+//               label:
+//                   Text('User', style: TextStyle(fontWeight: FontWeight.bold))),
+//           DataColumn(
+//               label: Text('Action',
+//                   style: TextStyle(fontWeight: FontWeight.bold))),
+//           DataColumn(
+//               label: Text('Timestamp',
+//                   style: TextStyle(fontWeight: FontWeight.bold))),
+//         ],
+//         rows: _mockRecentDocuments.map((doc) {
+//           return DataRow(cells: [
+//             DataCell(Text('${doc.documentType}.pdf')),
+//             DataCell(Text(doc.userName)),
+//             const DataCell(Text('View', style: TextStyle(color: Colors.blue))),
+//             DataCell(Text(_formatTimestamp(doc.timestamp))),
+//           ]);
+//         }).toList(),
+//       ),
+//     );
+//   }
+
+//   /// Handle sidebar navigation
+//   void _onSidebarMenuSelected(String menu) {
+//     if (menu == 'Overview') {
+//       // Already on the dashboard, do nothing or pop
+//     } else if (menu == 'Documents') {
+//       // TODO: Navigate to a Documents page or screen
+//       Navigator.push(
+//         context,
+//         MaterialPageRoute(builder: (_) => const DocumentOverviewScreen()),
+//       );
+//       ScaffoldMessenger.of(context).showSnackBar(
+//         const SnackBar(content: Text('Navigate to Documents screen')),
+//       );
+//     } else if (menu == 'Users') {
+//       // TODO: Navigate to a Users page or screen
+//       // Navigator.push(
+//       //   context,
+//       //   MaterialPageRoute(builder: (_) => UserFolderScreen()),
+//       // );
+//       // ScaffoldMessenger.of(context).showSnackBar(
+//       //   const SnackBar(content: Text('Navigate to Users screen')),
+//       // );
+//     }
+//   }
+
+//   // /// Dashboard metrics (uses Firestore to fetch data)
+//   // Widget _buildDashboardMetrics(BuildContext context) {
+//   //   return FutureBuilder<Map<String, dynamic>>(
+//   //     future: _fetchDashboardMetrics(),
+//   //     builder: (context, snapshot) {
+//   //       if (snapshot.connectionState == ConnectionState.waiting) {
+//   //         return const Center(child: CircularProgressIndicator());
+//   //       }
+//   //       if (snapshot.hasError) {
+//   //         return const Center(child: Text('Error loading metrics'));
+//   //       }
+//   //       final data = snapshot.data ?? {};
+//   //       final totalDocuments = data['totalDocuments'] ?? 0;
+//   //       final recentRetrievals = data['recentRetrievals'] ?? 0;
+
+//   //       return Wrap(
+//   //         spacing: 16,
+//   //         runSpacing: 16,
+//   //         children: [
+//   //           DashboardCard(
+//   //             icon: Icons.folder,
+//   //             title: 'Total Documents',
+//   //             subtitle: '$totalDocuments files stored',
+//   //             buttonText: 'View All',
+//   //             onPressed: () {
+//   //               // Placeholder for navigation to documents list
+//   //               ScaffoldMessenger.of(context).showSnackBar(
+//   //                 const SnackBar(content: Text('View All Documents clicked')),
+//   //               );
+//   //             },
+//   //           ),
+//   //           DashboardCard(
+//   //             icon: Icons.refresh,
+//   //             title: 'Recent Retrievals',
+//   //             subtitle: '$recentRetrievals documents this week',
+//   //             buttonText: 'See Details',
+//   //             onPressed: () {
+//   //               // Placeholder for navigation to recent retrievals
+//   //               ScaffoldMessenger.of(context).showSnackBar(
+//   //                 const SnackBar(
+//   //                     content: Text('See Recent Retrievals clicked')),
+//   //               );
+//   //             },
+//   //           ),
+//   //         ],
+//   //       );
+//   //     },
+//   //   );
+//   // }
+
+//   // /// Quick actions section
+//   // Widget _buildQuickActions() {
+//   //   return ElevatedButton(
+//   //     onPressed: () {
+//   //       // Example: navigate to OCR upload screen
+//   //       Navigator.push(
+//   //         context,
+//   //         MaterialPageRoute(builder: (_) => const OcrUploadScreen()),
+//   //       );
+//   //     },
+//   //     style: ElevatedButton.styleFrom(
+//   //       backgroundColor: blue,
+//   //       foregroundColor: white,
+//   //       padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+//   //       textStyle: const TextStyle(fontSize: 16),
+//   //     ),
+//   //     child: const Text('Upload New Document'),
+//   //   );
+//   // }
+
+//   // /// Recent documents table
+//   // Widget _buildRecentDocumentAccess(BuildContext context) {
+//   //   return Column(
+//   //     crossAxisAlignment: CrossAxisAlignment.start,
+//   //     children: [
+//   //       const Text(
+//   //         'Recent Document Access',
+//   //         style: TextStyle(
+//   //           fontSize: 18,
+//   //           fontWeight: FontWeight.bold,
+//   //           color: black,
+//   //         ),
+//   //       ),
+//   //       const SizedBox(height: 8),
+//   //       FutureBuilder<List<DocumentModel>>(
+//   //         future: _fetchRecentDocuments(),
+//   //         builder: (context, snapshot) {
+//   //           if (snapshot.connectionState == ConnectionState.waiting) {
+//   //             return const Center(child: CircularProgressIndicator());
+//   //           }
+//   //           if (snapshot.hasError) {
+//   //             return const Center(
+//   //                 child: Text('Error loading recent documents'));
+//   //           }
+//   //           final documents = snapshot.data ?? [];
+//   //           if (documents.isEmpty) {
+//   //             return const Center(child: Text('No recent documents found'));
+//   //           }
+//   //           return SingleChildScrollView(
+//   //             scrollDirection: Axis.horizontal,
+//   //             child: DataTable(
+//   //               columnSpacing: 24,
+//   //               columns: const [
+//   //                 DataColumn(
+//   //                   label: Text(
+//   //                     'Document',
+//   //                     style: TextStyle(fontWeight: FontWeight.bold),
+//   //                   ),
+//   //                 ),
+//   //                 DataColumn(
+//   //                   label: Text(
+//   //                     'User',
+//   //                     style: TextStyle(fontWeight: FontWeight.bold),
+//   //                   ),
+//   //                 ),
+//   //                 DataColumn(
+//   //                   label: Text(
+//   //                     'Action',
+//   //                     style: TextStyle(fontWeight: FontWeight.bold),
+//   //                   ),
+//   //                 ),
+//   //                 DataColumn(
+//   //                   label: Text(
+//   //                     'Timestamp',
+//   //                     style: TextStyle(fontWeight: FontWeight.bold),
+//   //                   ),
+//   //                 ),
+//   //                 DataColumn(label: Text('')), // For three-dot menu
+//   //               ],
+//   //               rows: documents.map((doc) {
+//   //                 return DataRow(cells: [
+//   //                   DataCell(Text(doc.documentType.isNotEmpty
+//   //                       ? '${doc.documentType}.pdf'
+//   //                       : 'Unknown.pdf')),
+//   //                   DataCell(Text(doc.userName)),
+//   //                   const DataCell(Text('View')),
+//   //                   DataCell(Text(_formatTimestamp(doc.timestamp))),
+//   //                   DataCell(
+//   //                     IconButton(
+//   //                       icon: const Icon(Icons.more_vert),
+//   //                       onPressed: () {
+//   //                         // Placeholder for menu action
+//   //                         ScaffoldMessenger.of(context).showSnackBar(
+//   //                           SnackBar(
+//   //                             content: Text(
+//   //                               'More options for ${doc.documentType} clicked',
+//   //                             ),
+//   //                           ),
+//   //                         );
+//   //                       },
+//   //                     ),
+//   //                   ),
+//   //                 ]);
+//   //               }).toList(),
+//   //             ),
+//   //           );
+//   //         },
+//   //       ),
+//   //     ],
+//   //   );
+//   // }
+
+//   // /// Fetch dashboard metrics
+//   // Future<Map<String, dynamic>> _fetchDashboardMetrics() async {
+//   //   try {
+//   //     final querySnapshot =
+//   //         await _documentService.firestore.collection('univault').get();
+//   //     int totalDocuments = 0;
+
+//   //     for (var doc in querySnapshot.docs) {
+//   //       final data = doc.data();
+//   //       totalDocuments += (data['totalDocuments'] as int? ?? 0);
+//   //     }
+//   //     // Fake recent retrievals = 10% of total
+//   //     final recentRetrievals = (totalDocuments * 0.1).round();
+
+//   //     return {
+//   //       'totalDocuments': totalDocuments,
+//   //       'recentRetrievals': recentRetrievals,
+//   //     };
+//   //   } catch (e) {
+//   //     throw Exception('Error fetching dashboard metrics: $e');
+//   //   }
+//   // }
+
+//   // /// Fetch 3 most recent documents from Firestore
+//   // Future<List<DocumentModel>> _fetchRecentDocuments() async {
+//   //   try {
+//   //     final querySnapshot = await _documentService.firestore
+//   //         .collectionGroup('documents')
+//   //         .orderBy('timestamp', descending: true)
+//   //         .limit(3)
+//   //         .get();
+
+//   //     return querySnapshot.docs.map((doc) {
+//   //       return DocumentModel.fromMap(doc.id, doc.data());
+//   //     }).toList();
+//   //   } catch (e) {
+//   //     throw Exception('Error fetching recent documents: $e');
+//   //   }
+//   // }
+
+//   /// Format timestamp
+//   String _formatTimestamp(DateTime timestamp) {
+//     final now = DateTime.now();
+//     final difference = now.difference(timestamp);
+
+//     if (difference.inMinutes < 60) {
+//       return '${difference.inMinutes} minutes ago';
+//     } else if (difference.inHours < 24) {
+//       return '${difference.inHours} hours ago';
+//     } else {
+//       return '${difference.inDays} days ago';
+//     }
+//   }
+// }
+import 'package:archival_system/src/features/screens/other_screens/document_overview_screen.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+
+import '../../../core/model/document_model.dart';
+import '../../../core/service/document_service.dart';
+import '../../widgets/dashboard_card.dart';
+import '../../widgets/sidebar.dart';
+import '../other_screens/dcuments/document_screen.dart';
+import '../other_screens/document_view_screen.dart';
+import '../other_screens/ocr_screen.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({Key? key}) : super(key: key);
@@ -14,359 +449,361 @@ class DashboardPage extends StatefulWidget {
 }
 
 class _DashboardPageState extends State<DashboardPage> {
-  final DataService _dataService = DataService();
+  static const Color lightblue = Color.fromARGB(255, 132, 132, 240);
+  static const Color white = Colors.white;
+  static Color blue = Colors.blue.shade700;
+  static const Color black = Colors.black;
 
-  List<ActivityItem> recentActivities = [];
-  bool _isLoading = false;
-  String _message = '';
+  final DocumentService _documentService = DocumentService();
 
-  @override
-  void initState() {
-    super.initState();
-    _fetchActivities();
-  }
-
-  Future<void> _fetchActivities() async {
-    setState(() {
-      _isLoading = true;
-      _message = '';
-    });
+  Future<List<DocumentModel>> _fetchRecentDocuments() async {
     try {
-      final activities = await _dataService.fetchRecentActivities();
-      setState(() {
-        recentActivities = activities;
-      });
+      // Use the new method from DocumentService
+      return await _documentService.fetchRecentDocuments(limit: 3);
     } catch (e) {
-      setState(() {
-        _message = 'Failed to load recent activities: $e';
-      });
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      // Show a more helpful error that guides the user
+      if (e.toString().contains('index')) {
+        final indexUrl = _documentService.getIndexCreationUrl();
+        // You could show a dialog here with the URL
+        print('Index missing. Create it at: $indexUrl');
+      }
+      throw Exception('Error fetching recent documents: $e');
     }
   }
+
+  // this helper method to show a dialog when the index is missing
+  void _showIndexMissingDialog(BuildContext context) {
+    final indexUrl = _documentService.getIndexCreationUrl();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Database Index Required'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'This feature requires a special database index. Please create the index by clicking the button below and following the Firebase instructions.',
+            ),
+            const SizedBox(height: 16),
+            SelectableText(
+              indexUrl,
+              style: TextStyle(fontSize: 12, color: Colors.blue.shade700),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              // Launch the URL if you have url_launcher package
+              // await launchUrl(Uri.parse(indexUrl));
+              // Or just copy to clipboard
+              await Clipboard.setData(ClipboardData(text: indexUrl));
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('URL copied to clipboard')),
+              );
+              Navigator.pop(context);
+            },
+            child: const Text('Copy URL'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ----- MOCK DATA (Do not remove, only comment out) -----
+//  static const int _mockTotalDocuments = 45;
+//  static const int _mockRecentRetrievals = 5;
+//  static List<DocumentModel> _mockRecentDocuments = [
+//    DocumentModel(
+//      id: '1',
+//      userName: 'Samuel Adeokun',
+//      matricNumber: '220118',
+//      level: '300 Level',
+//      documentType: 'Transcript',
+//      text: 'Sample text',
+//      timestamp: DateTime.now().subtract(const Duration(hours: 2)),
+//      fileUrl: '',
+//    ),
+//    DocumentModel(
+//      id: '2',
+//      userName: 'Janet Slyia',
+//      matricNumber: '202989',
+//      level: '200 Level',
+//      documentType: 'Letter',
+//      text: 'Sample text',
+//      timestamp: DateTime.now().subtract(const Duration(days: 1)),
+//      fileUrl: '',
+//    ),
+//    DocumentModel(
+//      id: '3',
+//      userName: 'Michael Jonathan',
+//      matricNumber: '203323',
+//      level: '400 Level',
+//      documentType: 'Report',
+//      text: 'Sample text',
+//      timestamp: DateTime.now().subtract(const Duration(days: 3)),
+//      fileUrl: '',
+//    ),
+//  ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: white,
       body: Row(
-        children: [
-          // 1) Side Navigation
-          Container(
-            width: 250,
-            color: Colors.deepPurple.shade700,
-            child: _buildSideNav(),
-          ),
-          // 2) Main Content
-          SizedBox(
-            width: MediaQuery.of(context).size.width - 250,
-            child: Expanded(
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  children: [
-                    _buildTopBar(context),
-                    const SizedBox(height: 16),
-                    _buildSystemOverview(context),
-                    const SizedBox(height: 16),
-                    _buildRecentActivity(context),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSideNav() {
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.only(top: 20.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Text(
-                'UniVault',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-            const SizedBox(height: 30),
-            _buildNavItem(
-              icon: Icons.description_outlined,
-              label: 'Documents',
-              onTap: () {},
-            ),
-            _buildNavItem(
-              icon: Icons.people_outline,
-              label: 'Users',
-              onTap: () {},
-            ),
-            _buildNavItem(
-              icon: Icons.lock_clock_outlined,
-              label: 'Access Logs',
-              onTap: () {},
-            ),
-            _buildNavItem(
-              icon: Icons.analytics_outlined,
-              label: 'Reports',
-              onTap: () {},
-            ),
-            const Spacer(),
-            ListTile(
-              leading: const CircleAvatar(
-                radius: 16,
-                backgroundColor: Colors.white54,
-                child: Icon(Icons.person, color: Colors.white),
-              ),
-              title: const Text(
-                'Admin User',
-                style: TextStyle(color: Colors.white),
-              ),
-              subtitle: const Text(
-                'System Administrator',
-                style: TextStyle(color: Colors.white70, fontSize: 12),
-              ),
-            ),
-            const SizedBox(height: 20),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNavItem({
-    required IconData icon,
-    required String label,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding:
-            const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-        child: Row(
-          children: [
-            Icon(icon, color: Colors.white),
-            const SizedBox(width: 10),
-            Text(
-              label,
-              style: const TextStyle(color: Colors.white, fontSize: 16),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTopBar(BuildContext context) {
-    return Container(
-      color: Colors.white,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      alignment: Alignment.topCenter,
-      child: Row(
-        children: [
-          const Text(
-            'Dashboard > Overview',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: Colors.grey,
-            ),
-          ),
-          const Spacer(),
-          IconButton(
-            icon: const Icon(Icons.notifications_none),
-            onPressed: () {},
-          ),
-          const SizedBox(width: 8),
-          IconButton(
-            icon: const Icon(Icons.settings_outlined),
-            onPressed: () {},
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSystemOverview(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-      child: Wrap(
-        spacing: 16,
-        runSpacing: 16,
-        children: [
-          _buildOverviewCard(
-            title: 'Documents',
-            value: '156 active docs',
-            buttonText: 'Manage Documents',
-            icon: Icons.description_outlined,
-            onPressed: () {},
-          ),
-          _buildOverviewCard(
-            title: 'Users',
-            value: '1,234 registered users',
-            buttonText: 'View Users',
-            icon: Icons.people_outline,
-            onPressed: () {},
-          ),
-          _buildOverviewCard(
-            title: 'Access Logs',
-            value: '892 events today',
-            buttonText: 'View Logs',
-            icon: Icons.lock_clock_outlined,
-            onPressed: () {},
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildOverviewCard({
-    required String title,
-    required String value,
-    required String buttonText,
-    required IconData icon,
-    required VoidCallback onPressed,
-  }) {
-    return Container(
-      width: 300,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.shade200,
-            offset: const Offset(0, 2),
-            blurRadius: 5,
-          ),
-        ],
-      ),
-      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Icon(icon, color: Colors.deepPurple.shade700, size: 28),
-              const SizedBox(width: 8),
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                ),
+          // Sidebar with animation
+          Sidebar(
+            selectedMenu: 'Overview', // This page is "Overview"
+            onMenuSelected: _onSidebarMenuSelected,
+          ).animate().fadeIn(duration: 500.ms),
+          // Main content area
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Dashboard Overview',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: black,
+                    ),
+                  ).animate().fadeIn(duration: 500.ms),
+                  const SizedBox(height: 16),
+                  _buildDashboardMetrics(context)
+                      .animate()
+                      .fadeIn(duration: 500.ms),
+                  const SizedBox(height: 24),
+                  _buildRecentDocumentAccess(context)
+                      .animate()
+                      .fadeIn(duration: 500.ms),
+                ],
               ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            value,
-            style: const TextStyle(fontSize: 16, color: Colors.black87),
-          ),
-          const SizedBox(height: 12),
-          ElevatedButton(
-            onPressed: onPressed,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.deepPurple.shade700,
             ),
-            child: Text(buttonText, style: const TextStyle(color: Colors.white)),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildRecentActivity(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-      child: Container(
-        width: double.infinity,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.shade200,
-              offset: const Offset(0, 2),
-              blurRadius: 5,
-            ),
-          ],
-        ),
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildDashboardMetrics(BuildContext context) {
+    return FutureBuilder<Map<String, dynamic>>(
+      future: _fetchDashboardMetrics(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (snapshot.hasError) {
+          return Center(
+              child: Text('Error loading metrics: ${snapshot.error}'));
+        }
+        final data = snapshot.data ?? {};
+        final totalDocuments = data['totalDocuments'] ?? 0;
+        final recentRetrievals = data['recentRetrievals'] ?? 0;
+
+        return Wrap(
+          spacing: 16,
+          runSpacing: 16,
           children: [
-            const Text(
-              'Recent Activity',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 12),
-            if (_isLoading)
-              const Center(child: CircularProgressIndicator())
-            else if (_message.isNotEmpty)
-              Text(
-                _message,
-                style: const TextStyle(color: Colors.red),
-              )
-            else
-              _buildActivityTable(),
+            DashboardCard(
+              icon: Icons.folder,
+              title: 'Total Documents',
+              subtitle: '$totalDocuments files stored',
+              buttonText: 'View All',
+              onPressed: () {
+                _showSnack('View All Documents clicked');
+              },
+            ).animate().fadeIn(duration: 400.ms),
+            DashboardCard(
+              icon: Icons.refresh,
+              title: 'Recent Retrievals',
+              subtitle: '$recentRetrievals documents this week',
+              buttonText: 'See Details',
+              onPressed: () {
+                _showSnack('See Recent Retrievals clicked');
+              },
+            ).animate().fadeIn(duration: 400.ms),
           ],
-        ),
-      ),
+        );
+      },
     );
   }
 
-  Widget _buildActivityTable() {
-    if (recentActivities.isEmpty) {
-      return const Text('No recent activity.');
-    }
-
-    return DataTable(
-      columns: const [
-        DataColumn(label: Text('Event')),
-        DataColumn(label: Text('User/Document')),
-        DataColumn(label: Text('Time')),
-        DataColumn(label: Text('Status')),
-      ],
-      rows: recentActivities.map((activity) {
-        return DataRow(cells: [
-          DataCell(Text(activity.event)),
-          DataCell(Text(activity.userOrDocument)),
-          DataCell(Text(
-            // example: how long ago from now
-            '${_timeAgoString(activity.time)}',
-          )),
-          DataCell(
-            Text(
-              activity.success ? 'Successful' : 'Failed',
-              style: TextStyle(
-                color: activity.success ? Colors.green : Colors.red,
-              ),
-            ),
+  Widget _buildRecentDocumentAccess(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Recent Document Access',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: black,
           ),
-        ]);
-      }).toList(),
+        ).animate().fadeIn(duration: 400.ms),
+        const SizedBox(height: 8),
+        FutureBuilder<List<DocumentModel>>(
+          future: _fetchRecentDocuments(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            if (snapshot.hasError) {
+              // If it's an index issue, show a more helpful message
+              if (snapshot.error.toString().contains('index')) {
+                return Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text('This feature requires a database index'),
+                      const SizedBox(height: 12),
+                      ElevatedButton(
+                        onPressed: () => _showIndexMissingDialog(context),
+                        child: const Text('Get Help'),
+                      ),
+                    ],
+                  ),
+                );
+              }
+              return Center(
+                  child: Text(
+                      'Error loading recent documents: ${snapshot.error}'));
+            }
+            final documents = snapshot.data ?? [];
+            if (documents.isEmpty) {
+              return const Center(child: Text('No recent documents found'));
+            }
+            return SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: DataTable(
+                columnSpacing: 24,
+                columns: const [
+                  DataColumn(
+                      label: Text('Document',
+                          style: TextStyle(fontWeight: FontWeight.bold))),
+                  DataColumn(
+                      label: Text('User',
+                          style: TextStyle(fontWeight: FontWeight.bold))),
+                  DataColumn(
+                      label: Text('Action',
+                          style: TextStyle(fontWeight: FontWeight.bold))),
+                  DataColumn(
+                      label: Text('Timestamp',
+                          style: TextStyle(fontWeight: FontWeight.bold))),
+                  DataColumn(label: Text('')),
+                ],
+                rows: documents.map((doc) {
+                  return DataRow(cells: [
+                    DataCell(Text(doc.documentType.isNotEmpty
+                        ? '${doc.documentType}.pdf'
+                        : 'Unknown.pdf')),
+                    DataCell(Text(doc.userName)),
+                    DataCell(TextButton(
+                      onPressed: () {
+                        _showSnack(
+                            'View action for ${doc.documentType} clicked');
+                      },
+                      child: const Text('View',
+                          style: TextStyle(color: Colors.blue)),
+                    )),
+                    DataCell(Text(_formatTimestamp(doc.timestamp))),
+                    DataCell(
+                      IconButton(
+                        icon: const Icon(Icons.more_vert),
+                        onPressed: () {
+                          _showSnack(
+                              'More options for ${doc.documentType} clicked');
+                        },
+                      ),
+                    ),
+                  ]);
+                }).toList(),
+              ),
+            );
+          },
+        ).animate().fadeIn(duration: 400.ms),
+      ],
     );
   }
 
-  // Example function to display "time ago"
-  String _timeAgoString(DateTime dateTime) {
-    final diff = DateTime.now().difference(dateTime);
-    if (diff.inMinutes < 1) return 'Just now';
-    if (diff.inMinutes < 60) return '${diff.inMinutes} minutes ago';
-    if (diff.inHours < 24) return '${diff.inHours} hours ago';
-    return '${diff.inDays} days ago';
+  void _showSnack(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
+  }
+
+  Future<Map<String, dynamic>> _fetchDashboardMetrics() async {
+    try {
+      final querySnapshot =
+          await _documentService.firestore.collection('univault').get();
+      int totalDocuments = 0;
+      for (var doc in querySnapshot.docs) {
+        final data = doc.data();
+        totalDocuments += (data['totalDocuments'] as int? ?? 0);
+      }
+      final recentRetrievals = (totalDocuments * 0.1).round();
+      return {
+        'totalDocuments': totalDocuments,
+        'recentRetrievals': recentRetrievals
+      };
+    } catch (e) {
+      throw Exception('Error fetching dashboard metrics: $e');
+    }
+  }
+
+  // Future<List<DocumentModel>> _fetchRecentDocuments() async {
+  //   try {
+  //     final querySnapshot = await _documentService.firestore
+  //         .collectionGroup('documents')
+  //         .orderBy('timestamp', descending: true)
+  //         .limit(3)
+  //         .get();
+
+  //     return querySnapshot.docs
+  //         .map((doc) => DocumentModel.fromMap(doc.id, doc.data()))
+  //         .toList();
+  //   } catch (e) {
+  //     throw Exception('Error fetching recent documents: $e');
+  //   }
+  // }
+
+  String _formatTimestamp(DateTime timestamp) {
+    final now = DateTime.now();
+    final difference = now.difference(timestamp);
+    if (difference.inMinutes < 60) {
+      return '${difference.inMinutes} minutes ago';
+    } else if (difference.inHours < 24) {
+      return '${difference.inHours} hours ago';
+    } else {
+      return '${difference.inDays} days ago';
+    }
+  }
+
+  void _onSidebarMenuSelected(String menu) {
+    if (menu == 'Overview') {
+      // Already on the dashboard.
+    } else if (menu == 'Documents') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const DocumentOverviewScreen()),
+      );
+      _showSnack('Navigating to Documents screen');
+    } else if (menu == 'Users') {
+      // TODO: Handle navigation to Users screen.
+      // Navigator.push(context, MaterialPageRoute(builder: (_) => UserFolderScreen()));
+      // _showSnack('Navigating to Users screen');
+    }
   }
 }
