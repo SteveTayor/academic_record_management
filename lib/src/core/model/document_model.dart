@@ -2,7 +2,6 @@ import 'package:archival_system/src/core/service/document_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'student_model.dart';
 
-
 class DocumentModel {
   final String id;
   final String userName;
@@ -12,7 +11,8 @@ class DocumentModel {
   final String documentType; // e.g., "Transcript", "Letter"
   final String fileUrl; // Empty since no file upload
   final DateTime timestamp;
-  final Map<String, dynamic>? structuredData; // For parsed transcript/letter data
+  final Map<String, dynamic>?
+      structuredData; // For parsed transcript/letter data
 
   DocumentModel({
     required this.id,
@@ -90,7 +90,7 @@ class DocumentModel {
       yearOfAdmission: studentData['yearOfAdmission'] as int? ?? 0,
       modeOfEntry: studentData['modeOfEntry'] ?? '',
       dateOfBirth: studentData['dateOfBirth'] ?? '',
-      courses: [], // Populate courses separately if needed
+      courses: const [], // Populate courses separately if needed
     );
   }
 }

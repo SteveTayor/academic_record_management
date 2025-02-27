@@ -959,7 +959,7 @@ import 'login_screen.dart';
 import 'validation.dart';
 
 class AdminRegistrationPage extends StatefulWidget {
-  const AdminRegistrationPage({Key? key}) : super(key: key);
+  const AdminRegistrationPage({super.key});
 
   @override
   _AdminRegistrationPageState createState() => _AdminRegistrationPageState();
@@ -988,13 +988,13 @@ class _AdminRegistrationPageState extends State<AdminRegistrationPage>
 
   // UI state flags
   bool _isRegistered = false;
-  bool _isVerified = false;
+  final bool _isVerified = false;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   bool _isSignUpLoading = false;
   bool _isResendEmailLoading = false;
-  bool _isLoading = false;
-  bool _isOtpSentLoading = false;
+  final bool _isLoading = false;
+  final bool _isOtpSentLoading = false;
   bool _isVerifyLoading = false;
   bool _isResendOtpLoadin = false;
   bool _isEmailVerificationLoading = false;

@@ -53,6 +53,18 @@ class DocumentService {
     }
   }
 
+  Future<List<String>> fetchLevelsForUser(String matricNumber) async {
+    try {
+      final userDoc =
+          _firestore.collection('univault').doc('student_$matricNumber');
+      final levelsSnapshot = await userDoc.collection('levels').get();
+      // Assuming each document in the 'levels' collection is named by its level (e.g., "200 Level")
+      return levelsSnapshot.docs.map((doc) => doc.id).toList();
+    } catch (e) {
+      throw Exception("Error fetching levels for user: $e");
+    }
+  }
+
   Future<List<DocumentModel>> fetchDocumentsByUser(String matricNumber) async {
     try {
       final userDoc =
@@ -71,7 +83,17 @@ class DocumentService {
       throw Exception("Error fetching user documents: $e");
     }
   }
-  
+
+  Future<int> fetchTotalDocumentsCount() async {
+    try {
+      // Use a collection group query to count all documents in subcollections named "documents"
+      final querySnapshot = await firestore.collectionGroup('documents').get();
+      return querySnapshot.docs.length;
+    } catch (e) {
+      throw Exception("Error fetching total documents count: $e");
+    }
+  }
+
   Future<List<DocumentModel>> fetchRecentDocuments({int limit = 3}) async {
     try {
       // First try with the collectionGroup query that requires an index
@@ -81,31 +103,31 @@ class DocumentService {
             .orderBy('timestamp', descending: true)
             .limit(limit)
             .get();
-            
+
         return querySnapshot.docs
             .map((doc) => DocumentModel.fromMap(doc.id, doc.data()))
             .toList();
       } catch (e) {
         // If the index doesn't exist, use a fallback approach
-        if (e.toString().contains('failed-precondition') || 
+        if (e.toString().contains('failed-precondition') ||
             e.toString().contains('requires an index')) {
           // Fallback: Get recent documents without ordering
           final querySnapshot = await _firestore
               .collectionGroup('documents')
               .limit(limit * 3) // Get more documents since we can't order them
               .get();
-              
+
           final docs = querySnapshot.docs
               .map((doc) => DocumentModel.fromMap(doc.id, doc.data()))
               .toList();
-              
+
           // Sort them in memory (not as efficient, but works without index)
           docs.sort((a, b) {
             final aTime = a.timestamp ?? DateTime.now();
             final bTime = b.timestamp ?? DateTime.now();
             return bTime.compareTo(aTime); // Descending order
           });
-          
+
           // Return only the number requested
           return docs.take(limit).toList();
         } else {
@@ -117,7 +139,7 @@ class DocumentService {
       throw Exception('Error fetching recent documents: $e');
     }
   }
-  
+
   // Helper method to suggest index creation
   String getIndexCreationUrl() {
     return 'https://console.firebase.google.com/v1/r/project/academic-archival-system/firestore/indexes?create_exemption=CmRwcm9qZWN0cy9hY2FkZW1pYy1hcmNoaXZhbC1zeXN0ZW0vZGF0YWJhc2VzLyhkZWZhdWx0KS9jb2xsZWN0aW9uR3JvdXBzL2RvY3VtZW50cy9maWVsZHMvdGltZXN0YW1wEAIaCAoEdGltZQ';
@@ -227,22 +249,29 @@ class DocumentService {
 
     for (var line in lines) {
       if (line.contains('Name:')) name = line.replaceAll('Name:', '').trim();
-      if (line.contains('Matric. No:'))
+      if (line.contains('Matric. No:')) {
         matricNumber = line.replaceAll('Matric. No:', '').trim();
-      if (line.contains('Course of Study:'))
+      }
+      if (line.contains('Course of Study:')) {
         courseOfStudy = line.replaceAll('Course of Study:', '').trim();
-      if (line.contains('Faculty:'))
+      }
+      if (line.contains('Faculty:')) {
         faculty = line.replaceAll('Faculty:', '').trim();
+      }
       if (line.contains('Sex:')) sex = line.replaceAll('Sex:', '').trim();
-      if (line.contains('Nationality:'))
+      if (line.contains('Nationality:')) {
         nationality = line.replaceAll('Nationality:', '').trim();
-      if (line.contains('Year of Admission:'))
+      }
+      if (line.contains('Year of Admission:')) {
         yearOfAdmission =
             int.tryParse(line.replaceAll('Year of Admission:', '').trim()) ?? 0;
-      if (line.contains('Mode of Entry:'))
+      }
+      if (line.contains('Mode of Entry:')) {
         modeOfEntry = line.replaceAll('Mode of Entry:', '').trim();
-      if (line.contains('Date of Birth:'))
+      }
+      if (line.contains('Date of Birth:')) {
         dateOfBirth = line.replaceAll('Date of Birth:', '').trim();
+      }
     }
 
     return Student(
@@ -255,7 +284,7 @@ class DocumentService {
       yearOfAdmission: yearOfAdmission,
       modeOfEntry: modeOfEntry,
       dateOfBirth: dateOfBirth,
-      courses: [],
+      courses: const [],
     );
   }
 
@@ -308,9 +337,7 @@ class DocumentService {
   String _inferAcademicLevel(String courseCode) {
     // Use RegExp to find the first digit in the course code
     final digitMatch = RegExp(r'\d').stringMatch(courseCode);
-    final level = digitMatch != null
-        ? digitMatch
-        : '1'; // Default to '1' if no digit found
+    final level = digitMatch ?? '1'; // Default to '1' if no digit found
     return '${int.parse(level)}00 Level';
   }
 

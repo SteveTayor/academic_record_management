@@ -5,10 +5,10 @@ class OverviewContent extends StatelessWidget {
   final VoidCallback onSearchPressed;
 
   const OverviewContent({
-    Key? key,
+    super.key,
     required this.onOcrUploadPressed,
     required this.onSearchPressed,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -131,7 +131,7 @@ class OverviewContent extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Recent Documents',
+            'Available Student Documents',
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),

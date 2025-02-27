@@ -25,9 +25,11 @@ dependencies:
   image: ^4.3.0
   lottie: ^3.3.0
   path_provider: ^2.1.5
+  pdf_image_renderer: ^1.0.1
   pdf_render: ^1.4.12
   provider: ^6.1.2
   timeago: ^3.7.0
+  pdf: ^3.3.0
 
 dev_dependencies:
   flutter_test:
@@ -47,3 +49,4 @@ flutter:
     - assets/images/
     - assets/images/university-of-ibadan-logo-transparent.png
     - assets/lottie/email_sent.json
+    - assets/lottie/document-illustration.json

@@ -144,7 +144,7 @@ import 'user_folder.dart';
 class MainFolderScreen extends StatelessWidget {
   final String searchQuery;
 
-  MainFolderScreen({Key? key, required this.searchQuery}) : super(key: key);
+  MainFolderScreen({super.key, required this.searchQuery});
 
   final DocumentService _documentService = DocumentService();
 

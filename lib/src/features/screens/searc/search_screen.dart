@@ -9,11 +9,11 @@ class SearchScreen extends StatefulWidget {
   final Function(String) onMenuSelected;
 
   const SearchScreen({
-    Key? key,
+    super.key,
     required this.documentService,
     required this.selectedMenu,
     required this.onMenuSelected,
-  }) : super(key: key);
+  });
 
   @override
   _SearchScreenState createState() => _SearchScreenState();
@@ -230,8 +230,8 @@ class _SearchScreenState extends State<SearchScreen> {
                               border: InputBorder.none,
                               hintText: 'Search by student name, matric...',
                               contentPadding:
-                                  EdgeInsets.symmetric(horizontal: 16),
-                              prefixIcon: Icon(Icons.search),
+                                  const EdgeInsets.symmetric(horizontal: 16),
+                              prefixIcon: const Icon(Icons.search),
                             ),
                             onSubmitted: (_) => _performSearch(),
                           ),

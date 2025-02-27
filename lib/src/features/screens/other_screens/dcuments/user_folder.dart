@@ -12,8 +12,8 @@ class UserFolderScreen extends StatelessWidget {
   UserFolderScreen({
     required this.userName,
     required this.matricNumber,
-    Key? key,
-  }) : super(key: key);
+    super.key,
+  });
 
   final DocumentService _documentService = DocumentService();
 

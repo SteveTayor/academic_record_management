@@ -8,10 +8,10 @@ class Sidebar extends StatefulWidget {
   final Function(String) onMenuSelected;
 
   const Sidebar({
-    Key? key,
+    super.key,
     required this.selectedMenu,
     required this.onMenuSelected,
-  }) : super(key: key);
+  });
 
   @override
   _SidebarState createState() => _SidebarState();

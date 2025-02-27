@@ -117,7 +117,7 @@ class DocumentDetailScreen extends StatelessWidget {
               ],
             ),
           );
-        }).toList(),
+        }),
       ],
     );
   }
@@ -127,21 +127,19 @@ class DocumentDetailScreen extends StatelessWidget {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ...value.entries
-              .map((subEntry) => Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 2),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '${subEntry.key}: ',
-                          style: const TextStyle(fontWeight: FontWeight.w500),
-                        ),
-                        Expanded(child: _renderStructuredValue(subEntry.value)),
-                      ],
+          ...value.entries.map((subEntry) => Padding(
+                padding: const EdgeInsets.symmetric(vertical: 2),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '${subEntry.key}: ',
+                      style: const TextStyle(fontWeight: FontWeight.w500),
                     ),
-                  ))
-              .toList(),
+                    Expanded(child: _renderStructuredValue(subEntry.value)),
+                  ],
+                ),
+              )),
         ],
       );
     }
@@ -185,7 +183,7 @@ class DocumentDetailScreen extends StatelessWidget {
             transcript['cumulativeUnitsRegistered']?.toString() ?? 'N/A'),
         const SizedBox(height: 16),
         _buildSectionTitle('Courses'),
-        ...courses.map((course) => _buildCourseTile(course)).toList(),
+        ...courses.map((course) => _buildCourseTile(course)),
       ],
     );
   }

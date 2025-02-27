@@ -429,20 +429,10 @@ import '../other_screens/ocr_screen.dart';
 //     }
 //   }
 // }
-import 'package:archival_system/src/features/screens/other_screens/document_overview_screen.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
-import '../../../core/model/document_model.dart';
-import '../../../core/service/document_service.dart';
-import '../../widgets/dashboard_card.dart';
-import '../../widgets/sidebar.dart';
-import '../other_screens/dcuments/document_screen.dart';
-import '../other_screens/document_view_screen.dart';
-import '../other_screens/ocr_screen.dart';
-
 class DashboardPage extends StatefulWidget {
-  const DashboardPage({Key? key}) : super(key: key);
+  const DashboardPage({super.key});
 
   @override
   State<DashboardPage> createState() => _DashboardPageState();
@@ -453,8 +443,44 @@ class _DashboardPageState extends State<DashboardPage> {
   static const Color white = Colors.white;
   static Color blue = Colors.blue.shade700;
   static const Color black = Colors.black;
-
+  // Pagination state
+  int _currentPage = 1;
+  int _rowsPerPage = 12; // default
+  List<DocumentModel> _allDocuments = [];
+  bool _isLoading = true;
+  bool _hasError = false;
   final DocumentService _documentService = DocumentService();
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchAllDocuments();
+  }
+
+  Future<void> _fetchAllDocuments() async {
+    setState(() {
+      _isLoading = true;
+      _hasError = false;
+    });
+
+    try {
+      // Fetch all or a large chunk of documents.
+      // If you only want "recent", adjust your Firestore query accordingly.
+      final docs = await _documentService.fetchRecentDocuments(limit: 1000);
+      setState(() {
+        _allDocuments = docs;
+      });
+    } catch (e) {
+      setState(() {
+        _hasError = true;
+      });
+      debugPrint('Error fetching documents: $e');
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
 
   Future<List<DocumentModel>> _fetchRecentDocuments() async {
     try {
@@ -652,88 +678,262 @@ class _DashboardPageState extends State<DashboardPage> {
             fontWeight: FontWeight.bold,
             color: black,
           ),
-        ).animate().fadeIn(duration: 400.ms),
+        ),
         const SizedBox(height: 8),
-        FutureBuilder<List<DocumentModel>>(
-          future: _fetchRecentDocuments(),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
-            }
-            if (snapshot.hasError) {
-              // If it's an index issue, show a more helpful message
-              if (snapshot.error.toString().contains('index')) {
-                return Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Text('This feature requires a database index'),
-                      const SizedBox(height: 12),
-                      ElevatedButton(
-                        onPressed: () => _showIndexMissingDialog(context),
-                        child: const Text('Get Help'),
-                      ),
-                    ],
-                  ),
-                );
-              }
-              return Center(
-                  child: Text(
-                      'Error loading recent documents: ${snapshot.error}'));
-            }
-            final documents = snapshot.data ?? [];
-            if (documents.isEmpty) {
-              return const Center(child: Text('No recent documents found'));
-            }
-            return SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: DataTable(
-                columnSpacing: 24,
-                columns: const [
-                  DataColumn(
-                      label: Text('Document',
-                          style: TextStyle(fontWeight: FontWeight.bold))),
-                  DataColumn(
-                      label: Text('User',
-                          style: TextStyle(fontWeight: FontWeight.bold))),
-                  DataColumn(
-                      label: Text('Action',
-                          style: TextStyle(fontWeight: FontWeight.bold))),
-                  DataColumn(
-                      label: Text('Timestamp',
-                          style: TextStyle(fontWeight: FontWeight.bold))),
-                  DataColumn(label: Text('')),
-                ],
-                rows: documents.map((doc) {
-                  return DataRow(cells: [
-                    DataCell(Text(doc.documentType.isNotEmpty
-                        ? '${doc.documentType}.pdf'
-                        : 'Unknown.pdf')),
-                    DataCell(Text(doc.userName)),
-                    DataCell(TextButton(
+        // Decide what to show based on loading/error states
+        if (_isLoading)
+          const Center(child: CircularProgressIndicator())
+        else if (_hasError)
+          const Center(child: Text('Error loading recent documents.'))
+        else if (_allDocuments.isEmpty)
+          const Center(child: Text('No recent documents found'))
+        else
+          _buildPaginatedTable(),
+      ],
+    );
+  }
+
+  // Widget _buildRecentDocumentAccess(BuildContext context) {
+  //   return Column(
+  //     crossAxisAlignment: CrossAxisAlignment.start,
+  //     children: [
+  //       const Text(
+  //         'Recent Document Access',
+  //         style: TextStyle(
+  //           fontSize: 18,
+  //           fontWeight: FontWeight.bold,
+  //           color: black,
+  //         ),
+  //       ).animate().fadeIn(duration: 400.ms),
+  //       const SizedBox(height: 8),
+  //       FutureBuilder<List<DocumentModel>>(
+  //         future: _fetchRecentDocuments(),
+  //         builder: (context, snapshot) {
+  //           if (snapshot.connectionState == ConnectionState.waiting) {
+  //             return const Center(child: CircularProgressIndicator());
+  //           }
+  //           if (snapshot.hasError) {
+  //             // If it's an index issue, show a more helpful message
+  //             if (snapshot.error.toString().contains('index')) {
+  //               return Center(
+  //                 child: Column(
+  //                   mainAxisSize: MainAxisSize.min,
+  //                   children: [
+  //                     const Text('This feature requires a database index'),
+  //                     const SizedBox(height: 12),
+  //                     ElevatedButton(
+  //                       onPressed: () => _showIndexMissingDialog(context),
+  //                       child: const Text('Get Help'),
+  //                     ),
+  //                   ],
+  //                 ),
+  //               );
+  //             }
+  //             return Center(
+  //                 child: Text(
+  //                     'Error loading recent documents: ${snapshot.error}'));
+  //           }
+  //           final documents = snapshot.data ?? [];
+  //           if (documents.isEmpty) {
+  //             return const Center(child: Text('No recent documents found'));
+  //           }
+  //           return SingleChildScrollView(
+  //             scrollDirection: Axis.horizontal,
+  //             child: Container(
+  //               width: MediaQuery.of(context).size.width,
+  //               margin: const EdgeInsets.all(16),
+  //               decoration: BoxDecoration(
+  //                 borderRadius: BorderRadius.circular(8),
+  //                 color: Colors.blueGrey[50],
+  //               ),
+  //               child: DataTable(
+  //                 columnSpacing: 24,
+  //                 columns: const [
+  //                   DataColumn(
+  //                       label: Text('Document',
+  //                           style: TextStyle(fontWeight: FontWeight.bold))),
+  //                   DataColumn(
+  //                       label: Text('User',
+  //                           style: TextStyle(fontWeight: FontWeight.bold))),
+  //                   DataColumn(
+  //                       label: Text('Action',
+  //                           style: TextStyle(fontWeight: FontWeight.bold))),
+  //                   DataColumn(
+  //                       label: Text('Timestamp',
+  //                           style: TextStyle(fontWeight: FontWeight.bold))),
+  //                   DataColumn(label: Text('')),
+  //                 ],
+  //                 rows: documents.map((doc) {
+  //                   return DataRow(cells: [
+  //                     DataCell(Text(doc.documentType.isNotEmpty
+  //                         ? '${doc.documentType}.pdf'
+  //                         : 'Unknown.pdf')),
+  //                     DataCell(Text(doc.userName)),
+  //                     DataCell(TextButton(
+  //                       onPressed: () {
+  //                         _showSnack(
+  //                             'View action for ${doc.documentType} clicked');
+  //                       },
+  //                       child: const Text('View',
+  //                           style: TextStyle(color: Colors.blue)),
+  //                     )),
+  //                     DataCell(Text(_formatTimestamp(doc.timestamp))),
+  //                     DataCell(
+  //                       IconButton(
+  //                         icon: const Icon(Icons.more_vert),
+  //                         onPressed: () {
+  //                           _showSnack(
+  //                               'More options for ${doc.documentType} clicked');
+  //                         },
+  //                       ),
+  //                     ),
+  //                   ]);
+  //                 }).toList(),
+  //               ),
+  //             ),
+  //           );
+  //         },
+  //       ).animate().fadeIn(duration: 400.ms),
+  //     ],
+  //   );
+  // }
+
+  Widget _buildPaginatedTable() {
+    // 1. Calculate total pages
+    final totalDocs = _allDocuments.length;
+    final totalPages = (totalDocs / _rowsPerPage).ceil();
+
+    // 2. Determine the slice of documents for current page
+    final startIndex = (_currentPage - 1) * _rowsPerPage;
+    final endIndex = startIndex + _rowsPerPage;
+    final displayedDocs = _allDocuments.sublist(
+      startIndex,
+      endIndex > totalDocs ? totalDocs : endIndex,
+    );
+
+    return Column(
+      children: [
+        // The table
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Container(
+            width: MediaQuery.of(context).size.width - 350,
+            margin: const EdgeInsets.all(16),
+            child: DataTable(
+              decoration: BoxDecoration(
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(15),
+                  topRight: Radius.circular(15),
+                ),
+                color: Colors.blueGrey[50],
+              ),
+              // headingRowColor: WidgetStatePropertyAll(Colors.blue[600]),
+              columnSpacing: 24,
+              columns: const [
+                DataColumn(
+                  label: Text('Document',
+                      style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
+                DataColumn(
+                  label: Text('Student',
+                      style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
+                DataColumn(
+                  label: Text('Action',
+                      style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
+                DataColumn(
+                  label: Text('Timestamp',
+                      style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
+                DataColumn(label: Text('')),
+              ],
+              rows: displayedDocs.map((doc) {
+                return DataRow(cells: [
+                  DataCell(Text(doc.documentType.isNotEmpty
+                      ? '${doc.documentType}.pdf'
+                      : 'Unknown.pdf')),
+                  DataCell(Text(doc.userName)),
+                  DataCell(TextButton(
+                    onPressed: () {
+                      // s_showSnack('View action for ${doc.documentType} clicked');
+                    },
+                    child: const Text('Recently Scanned',
+                        style: TextStyle(color: Colors.purple)),
+                  )),
+                  DataCell(Text(_formatTimestamp(doc.timestamp))),
+                  DataCell(
+                    IconButton(
+                      icon: const Icon(Icons.more_vert),
                       onPressed: () {
                         _showSnack(
-                            'View action for ${doc.documentType} clicked');
+                            'More options for ${doc.documentType} clicked');
                       },
-                      child: const Text('View',
-                          style: TextStyle(color: Colors.blue)),
-                    )),
-                    DataCell(Text(_formatTimestamp(doc.timestamp))),
-                    DataCell(
-                      IconButton(
-                        icon: const Icon(Icons.more_vert),
-                        onPressed: () {
-                          _showSnack(
-                              'More options for ${doc.documentType} clicked');
-                        },
-                      ),
                     ),
-                  ]);
+                  ),
+                ]);
+              }).toList(),
+            ),
+          ),
+        ),
+
+        // The pagination controls
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              // Rows per page dropdown
+              const Text('Rows per page: '),
+              DropdownButton<int>(
+                value: _rowsPerPage,
+                items: [12, 24, 50, 100].map((val) {
+                  return DropdownMenuItem<int>(
+                    value: val,
+                    child: Text('$val'),
+                  );
                 }).toList(),
+                onChanged: (val) {
+                  if (val != null) {
+                    setState(() {
+                      _rowsPerPage = val;
+                      _currentPage = 1; // Reset to first page
+                    });
+                  }
+                },
               ),
-            );
-          },
-        ).animate().fadeIn(duration: 400.ms),
+
+              const SizedBox(width: 24),
+
+              // Previous page
+              IconButton(
+                icon: const Icon(Icons.chevron_left),
+                onPressed: _currentPage > 1
+                    ? () {
+                        setState(() {
+                          _currentPage--;
+                        });
+                      }
+                    : null,
+              ),
+
+              // Page indicator
+              Text('$_currentPage of $totalPages'),
+
+              // Next page
+              IconButton(
+                icon: const Icon(Icons.chevron_right),
+                onPressed: _currentPage < totalPages
+                    ? () {
+                        setState(() {
+                          _currentPage++;
+                        });
+                      }
+                    : null,
+              ),
+            ],
+          ),
+        ),
       ],
     );
   }
@@ -744,22 +944,34 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
+  // Future<Map<String, dynamic>> _fetchDashboardMetrics() async {
+  //   try {
+  //     final querySnapshot =
+  //         await _documentService.firestore.collection('univault').get();
+  //     int totalDocuments = 0;
+  //     for (var doc in querySnapshot.docs) {
+  //       final data = doc.data();
+  //       totalDocuments += (data['totalDocuments'] as int? ?? 0);
+  //     }
+  //     final recentRetrievals = (totalDocuments * 0.1).round();
+  //     return {
+  //       'totalDocuments': totalDocuments,
+  //       'recentRetrievals': recentRetrievals
+  //     };
+  //   } catch (e) {
+  //     throw Exception('Error fetching dashboard metrics: $e');
+  //   }
+  // }
   Future<Map<String, dynamic>> _fetchDashboardMetrics() async {
     try {
-      final querySnapshot =
-          await _documentService.firestore.collection('univault').get();
-      int totalDocuments = 0;
-      for (var doc in querySnapshot.docs) {
-        final data = doc.data();
-        totalDocuments += (data['totalDocuments'] as int? ?? 0);
-      }
+      final totalDocuments = await _documentService.fetchTotalDocumentsCount();
       final recentRetrievals = (totalDocuments * 0.1).round();
       return {
         'totalDocuments': totalDocuments,
-        'recentRetrievals': recentRetrievals
+        'recentRetrievals': recentRetrievals,
       };
     } catch (e) {
-      throw Exception('Error fetching dashboard metrics: $e');
+      throw Exception("Error fetching dashboard metrics: $e");
     }
   }
 

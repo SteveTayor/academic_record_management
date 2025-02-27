@@ -40,6 +40,7 @@ class UserFolderItem extends StatelessWidget {
   final VoidCallback onTap;
 
   const UserFolderItem({
+    super.key,
     required this.user,
     required this.onTap,
   });
