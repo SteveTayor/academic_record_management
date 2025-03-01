@@ -20,20 +20,17 @@ class LevelDocumentsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async => false,
-      child: Scaffold(
-        appBar: AppBar(
-          title: Text('$level Documents'),
-        ),
-        body: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildBreadcrumb(context),
-            _buildTitle(),
-            _buildDocumentsList(),
-          ],
-        ),
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('$level Documents'),
+      ),
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildBreadcrumb(context),
+          _buildTitle(),
+          _buildDocumentsList(),
+        ],
       ),
     );
   }

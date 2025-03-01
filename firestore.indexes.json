@@ -1,37 +1,6 @@
 {
   "indexes": [
-    {
-      "collectionGroup": "documents",
-      "queryScope": "COLLECTION_GROUP",
-      "fields": [
-        {
-          "fieldPath": "documentType",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "level",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "timestamp",
-          "order": "DESCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "univault",
-      "queryScope": "COLLECTION_GROUP",
-      "fields": [
-        {
-          "fieldPath": "createdAt",
-          "order": "DESCENDING"
-        },
-        {
-          "fieldPath": "matricNumber",
-          "order": "DESCENDING"
-        }
-      ]
-    }
+  
   ],
   "fieldOverrides": []
 }

@@ -9,34 +9,31 @@ class DocumentDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async => false,
-      child: Scaffold(
-        appBar: AppBar(
-          title: Text(document.documentType),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.download),
-              onPressed: () => _handleDownload(context),
-            ),
-            IconButton(
-              icon: const Icon(Icons.delete),
-              onPressed: () => _handleDelete(context),
-            ),
-          ],
-        ),
-        body: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildDocumentInfoCard(),
-              const SizedBox(height: 20),
-              _buildStructuredDataSection(),
-              const SizedBox(height: 20),
-              _buildRawTextSection(),
-            ],
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(document.documentType),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.download),
+            onPressed: () => _handleDownload(context),
           ),
+          IconButton(
+            icon: const Icon(Icons.delete),
+            onPressed: () => _handleDelete(context),
+          ),
+        ],
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildDocumentInfoCard(),
+            const SizedBox(height: 20),
+            _buildStructuredDataSection(),
+            const SizedBox(height: 20),
+            _buildRawTextSection(),
+          ],
         ),
       ),
     );

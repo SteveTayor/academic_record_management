@@ -395,7 +395,8 @@ class _SearchScreenState extends State<SearchScreen> {
                   Consumer<DocumentNavigationProvider>(
                     builder: (context, provider, child) {
                       if (provider.error != null) {
-                        return Center(child: Text('Error: ${provider.error}'));
+                        return Center(
+                            child: SelectableText('Error: ${provider.error}'));
                       }
                       // Determine what to display
                       final bool hasSearchCriteria =

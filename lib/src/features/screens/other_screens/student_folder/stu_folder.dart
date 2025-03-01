@@ -17,20 +17,17 @@ class UserFolderScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async => false,
-      child: Scaffold(
-        appBar: AppBar(
-          title: Text('$userName Folders'),
-        ),
-        body: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildBreadcrumb(context),
-            _buildTitle(),
-            _buildLevelFoldersList(),
-          ],
-        ),
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('$userName Folders'),
+      ),
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildBreadcrumb(context),
+          _buildTitle(),
+          _buildLevelFoldersList(),
+        ],
       ),
     );
   }
