@@ -36,10 +36,23 @@ class _OverviewContentState extends State<OverviewContent> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Documents > Overview',
-              style: TextStyle(color: Colors.grey, fontSize: 14),
+            Row(
+              children: [
+                GestureDetector(
+                  onTap: () {},
+                  child: const Text(
+                    'Documents',
+                    style: TextStyle(color: Colors.blue),
+                  ),
+                ),
+                const Icon(Icons.chevron_right),
+                const Text('Overview'),
+              ],
             ),
+            // const Text(
+            //   'Documents > Overview',
+            //   style: TextStyle(color: Colors.grey, fontSize: 14),
+            // ),
             const SizedBox(height: 16),
             _buildHeaderCards(context),
             const SizedBox(height: 24),

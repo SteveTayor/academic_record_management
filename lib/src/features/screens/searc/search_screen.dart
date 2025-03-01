@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/model/document_model.dart';
 import '../../../core/providers/document_provider.dart';
-import '../../../core/service/document_service.dart';
-import '../../widgets/sidebar.dart';
 import 'package:provider/provider.dart';
 
 class SearchScreen extends StatefulWidget {
@@ -141,7 +139,7 @@ class _SearchScreenState extends State<SearchScreen> {
     final provider =
         Provider.of<DocumentNavigationProvider>(context, listen: false);
     provider.clearSearch();
-    provider.fetchRecentDocuments(limit: _itemsPerPage);
+    // provider.fetchRecentDocuments(limit: _itemsPerPage);
   }
 
   void _showErrorSnackBar(String message) {
@@ -383,17 +381,34 @@ class _SearchScreenState extends State<SearchScreen> {
                   const SizedBox(height: 32),
 
                   // Search Results
+                  // Consumer<DocumentNavigationProvider>(
+                  //   builder: (context, provider, child) {
+                  //     final List<DocumentModel> results =
+                  //         provider.searchResults.isNotEmpty
+                  //             ? provider.searchResults
+                  //             : provider.recentDocuments;
+
+                  //     final String resultsTitle =
+                  //         provider.searchResults.isNotEmpty
+                  //             ? 'Search Results'
+                  //             : 'Recent Documents';
                   Consumer<DocumentNavigationProvider>(
                     builder: (context, provider, child) {
-                      final List<DocumentModel> results =
-                          provider.searchResults.isNotEmpty
-                              ? provider.searchResults
-                              : provider.recentDocuments;
-
-                      final String resultsTitle =
-                          provider.searchResults.isNotEmpty
-                              ? 'Search Results'
-                              : 'Recent Documents';
+                      if (provider.error != null) {
+                        return Center(child: Text('Error: ${provider.error}'));
+                      }
+                      // Determine what to display
+                      final bool hasSearchCriteria =
+                          _searchController.text.isNotEmpty ||
+                              selectedLevel != null ||
+                              selectedDocumentType != null ||
+                              selectedDateRange != null;
+                      final List<DocumentModel> results = hasSearchCriteria
+                          ? provider.searchResults
+                          : provider.recentlySearchedDocuments;
+                      final String resultsTitle = hasSearchCriteria
+                          ? 'Search Results'
+                          : 'Recently Searched Documents';
 
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -436,9 +451,12 @@ class _SearchScreenState extends State<SearchScreen> {
                                       ],
                                     ),
                                     child: results.isEmpty
-                                        ? const Center(
+                                        ? Center(
                                             child: Text(
-                                                'No documents found. Try a different search.'),
+                                              hasSearchCriteria
+                                                  ? 'No documents found. Try a different search.'
+                                                  : 'No recently searched documents.',
+                                            ),
                                           )
                                         : _buildDocumentsList(
                                             results, provider),

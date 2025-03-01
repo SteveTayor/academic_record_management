@@ -11,6 +11,7 @@ class DocumentNavigationProvider extends ChangeNotifier {
   List<DocumentModel> _recentDocuments = [];
   List<DocumentModel> _searchResults = [];
   Map<String, List<String>> _levelsCache = {};
+  List<DocumentModel> _recentlySearchedDocuments = [];
   int _totalDocumentsCount = 0;
   bool _isLoading = false;
   String? _error;
@@ -23,6 +24,8 @@ class DocumentNavigationProvider extends ChangeNotifier {
   List<Map<String, String>> get users => _users;
   List<DocumentModel> get documents => _documents;
   List<DocumentModel> get recentDocuments => _recentDocuments;
+  List<DocumentModel> get recentlySearchedDocuments =>
+      _recentlySearchedDocuments;
   List<DocumentModel> get searchResults => _searchResults;
   int get totalDocumentsCount => _totalDocumentsCount;
   bool get isLoading => _isLoading;
@@ -88,7 +91,7 @@ class DocumentNavigationProvider extends ChangeNotifier {
       _setLoading(true);
       final results = await _documentService.fetchRecentDocuments(
         limit: limit,
-        // startAfterDocId: offset > 0 ? _lastDocumentId : null,
+        startAfterDocId: offset > 0 ? _lastDocumentId : null,
       );
 
       if (results.isNotEmpty) {
@@ -130,34 +133,42 @@ class DocumentNavigationProvider extends ChangeNotifier {
   }) async {
     try {
       _setLoading(true);
-
       final results = await _documentService.searchDocuments(
         query: searchParams['query'] as String?,
         level: searchParams['level'] as String?,
         documentType: searchParams['documentType'] as String?,
         dateRange: searchParams['dateRange'] as String?,
         limit: searchParams['itemsPerPage'] as int? ?? 20,
-        // startAfterDocId: append ? _lastDocumentId : null,
+        startAfterDocId: append ? _lastDocumentId : null,
       );
-
+      if (!append) {
+        _searchResults = results; // Always update, even if empty
+        _hasMoreSearchResults = true;
+        if (results.isNotEmpty) {
+          // Add to recently searched, avoiding duplicates
+          _recentlySearchedDocuments = [
+            ...results,
+            ..._recentlySearchedDocuments
+                .where((doc) => !results.any((r) => r.id == doc.id)),
+          ].take(10).toList(); // Limit to 10 items
+        }
+      } else if (results.isNotEmpty) {
+        _searchResults = [..._searchResults, ...results];
+        _recentlySearchedDocuments = [
+          ...results,
+          ..._recentlySearchedDocuments
+              .where((doc) => !results.any((r) => r.id == doc.id)),
+        ].take(10).toList();
+      }
       if (results.isNotEmpty) {
         _lastDocumentId = results.last.id;
-
-        if (append) {
-          _searchResults = [..._searchResults, ...results];
-        } else {
-          _searchResults = results;
-          _hasMoreSearchResults = true; // Reset pagination for new search
-        }
       }
-
-      // If fewer documents returned than requested, we've reached the end
       if (results.length < (searchParams['itemsPerPage'] as int? ?? 20)) {
         _hasMoreSearchResults = false;
       }
-
       _setLoading(false);
     } catch (e) {
+      _searchResults = append ? _searchResults : []; // Reset if not appending
       _handleError('Error searching documents: $e');
     }
   }
@@ -174,12 +185,19 @@ class DocumentNavigationProvider extends ChangeNotifier {
   Future<void> saveDocument(DocumentModel document) async {
     try {
       _setLoading(true);
-      await _documentService.saveDocument(document);
-
+      final isNewUser = await _documentService.saveDocument(document);
       // Update local state
       _documents = [..._documents, document];
       _totalDocumentsCount++;
-
+      if (isNewUser) {
+        _users = [
+          ..._users,
+          {
+            'name': document.userName,
+            'matricNumber': document.matricNumber,
+          }
+        ];
+      }
       // Update recent documents if necessary
       if (_recentDocuments.isNotEmpty) {
         _recentDocuments = [document, ..._recentDocuments];
@@ -280,5 +298,11 @@ class DocumentNavigationProvider extends ChangeNotifier {
     if (_hasMoreSearchResults && !_isLoading) {
       await searchDocuments(searchParams: searchParams, append: true);
     }
+  }
+
+  // Clear recently searched documents if needed
+  void clearRecentlySearched() {
+    _recentlySearchedDocuments = [];
+    notifyListeners();
   }
 }

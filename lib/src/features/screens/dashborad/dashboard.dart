@@ -447,7 +447,7 @@ class _DashboardPageState extends State<DashboardPage> {
   static const Color black = Colors.black;
   // Pagination state
   int _currentPage = 1;
-  int _rowsPerPage = 12;
+  int _rowsPerPage = 8;
   final DocumentService _documentService = DocumentService();
   final DocumentNavigationProvider _documentProvider =
       DocumentNavigationProvider();
@@ -570,8 +570,8 @@ class _DashboardPageState extends State<DashboardPage> {
           ).animate().fadeIn(duration: 500.ms),
           // Main content area
           Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(16.0),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.start,
@@ -663,29 +663,31 @@ class _DashboardPageState extends State<DashboardPage> {
   Widget _buildRecentDocumentAccess(BuildContext context) {
     return Consumer<DocumentNavigationProvider>(
         builder: (context, recentProvider, _) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Recent Document Access',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: black,
+      return SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Recent Document Access',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: black,
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
+            const SizedBox(height: 8),
 
-          // Use provider's state variables instead of local ones
-          if (recentProvider.isLoading)
-            const Center(child: CircularProgressIndicator())
-          else if (recentProvider.error != null)
-            Center(child: Text('Error: ${recentProvider.error}'))
-          else if (recentProvider.recentDocuments.isEmpty)
-            const Center(child: Text('No recent documents found'))
-          else
-            _buildPaginatedTable(context, recentProvider.recentDocuments),
-        ],
+            // Use provider's state variables instead of local ones
+            if (recentProvider.isLoading)
+              const Center(child: CircularProgressIndicator())
+            else if (recentProvider.error != null)
+              Center(child: Text('Error: ${recentProvider.error}'))
+            else if (recentProvider.recentDocuments.isEmpty)
+              const Center(child: Text('No recent documents found'))
+            else
+              _buildPaginatedTable(context, recentProvider.recentDocuments),
+          ],
+        ),
       );
     });
   }
@@ -856,7 +858,7 @@ class _DashboardPageState extends State<DashboardPage> {
                     onPressed: () {
                       // s_showSnack('View action for ${doc.documentType} clicked');
                     },
-                    child: const Text('Recently Scanned',
+                    child: const Text('Recently Accessed',
                         style: TextStyle(color: Colors.purple)),
                   )),
                   DataCell(Text(_formatTimestamp(doc.timestamp))),
@@ -885,7 +887,7 @@ class _DashboardPageState extends State<DashboardPage> {
               const Text('Rows per page: '),
               DropdownButton<int>(
                 value: _rowsPerPage,
-                items: [12, 24, 50, 100].map((val) {
+                items: [8, 20, 50, 100].map((val) {
                   return DropdownMenuItem<int>(
                     value: val,
                     child: Text('$val'),

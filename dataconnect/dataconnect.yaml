@@ -1,5 +1,5 @@
 specVersion: "v1beta"
-serviceId: "archival_system"
+serviceId: "academicrecordmanagement"
 location: "us-central1"
 schema:
   source: "./schema"
@@ -7,6 +7,6 @@ schema:
     postgresql:
       database: "fdcdb"
       cloudSql:
-        instanceId: "archival_system-fdc"
+        instanceId: "academicrecordmanagement-fdc"
       # schemaValidation: "COMPATIBLE"
 connectorDirs: ["./connector"]

@@ -364,7 +364,7 @@ class DocumentService {
   }
 
   /// Save document metadata (with extracted text and structured data) to Firestore.
-  Future<void> saveDocument(DocumentModel document) async {
+  Future<bool> saveDocument(DocumentModel document) async {
     try {
       if (document.matricNumber.isEmpty || document.level.isEmpty) {
         throw Exception("Document must have a matric number and level.");
@@ -376,12 +376,17 @@ class DocumentService {
 
       // Check if user document exists and create if needed
       final userSnapshot = await userDoc.get();
-      if (!userSnapshot.exists) {
+      bool isNewUser = !userSnapshot.exists;
+      if (isNewUser) {
         await userDoc.set({
           'userName': document.userName,
           'matricNumber': document.matricNumber,
           'totalDocuments': 1,
           'createdAt': FieldValue.serverTimestamp(),
+        });
+      } else {
+        await userDoc.update({
+          'totalDocuments': FieldValue.increment(1),
         });
       }
 
@@ -418,11 +423,11 @@ class DocumentService {
       );
 
       await docRef.set(newDocument.toMap());
-
       // Update the total documents count
       await userDoc.update({
         'totalDocuments': FieldValue.increment(1),
       });
+      return isNewUser;
     } catch (e) {
       throw Exception("Error saving document: $e");
     }
@@ -564,19 +569,15 @@ class DocumentService {
 
       // Handle date range filtering
       if (dateRange != null && dateRange.isNotEmpty) {
-        // Parse the date range string (assuming format like "2023-01-01,2023-12-31")
-        final dates = dateRange.split(',');
+        final dates = dateRange.split(' to ');
         if (dates.length == 2) {
           final startDate = DateTime.tryParse(dates[0])?.toUtc();
           final endDate = DateTime.tryParse(dates[1])?.toUtc();
-
           if (startDate != null) {
             searchQuery = searchQuery.where('timestamp',
                 isGreaterThanOrEqualTo: startDate);
           }
-
           if (endDate != null) {
-            // Add a day to include the whole end date
             final adjustedEndDate = endDate.add(const Duration(days: 1));
             searchQuery =
                 searchQuery.where('timestamp', isLessThan: adjustedEndDate);
