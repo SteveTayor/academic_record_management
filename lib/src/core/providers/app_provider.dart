@@ -111,22 +111,29 @@ class AppState extends ChangeNotifier {
 
     for (var line in lines) {
       if (line.contains('Name:')) name = line.replaceAll('Name:', '').trim();
-      if (line.contains('Matric. No:'))
+      if (line.contains('Matric. No:')) {
         matricNumber = line.replaceAll('Matric. No:', '').trim();
-      if (line.contains('Course of Study:'))
+      }
+      if (line.contains('Course of Study:')) {
         courseOfStudy = line.replaceAll('Course of Study:', '').trim();
-      if (line.contains('Faculty:'))
+      }
+      if (line.contains('Faculty:')) {
         faculty = line.replaceAll('Faculty:', '').trim();
+      }
       if (line.contains('Sex:')) sex = line.replaceAll('Sex:', '').trim();
-      if (line.contains('Nationality:'))
+      if (line.contains('Nationality:')) {
         nationality = line.replaceAll('Nationality:', '').trim();
-      if (line.contains('Year of Admission:'))
+      }
+      if (line.contains('Year of Admission:')) {
         yearOfAdmission =
             int.tryParse(line.replaceAll('Year of Admission:', '').trim()) ?? 0;
-      if (line.contains('Mode of Entry:'))
+      }
+      if (line.contains('Mode of Entry:')) {
         modeOfEntry = line.replaceAll('Mode of Entry:', '').trim();
-      if (line.contains('Date of Birth:'))
+      }
+      if (line.contains('Date of Birth:')) {
         dateOfBirth = line.replaceAll('Date of Birth:', '').trim();
+      }
     }
 
     return Student(

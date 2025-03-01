@@ -21,7 +21,7 @@ class DocumentService {
 
       // Use consistent document ID format
       final userDoc =
-          _firestore.collection('univault').doc('${USER_PREFIX}$matricNumber');
+          _firestore.collection('univault').doc('$USER_PREFIX$matricNumber');
 
       final snapshot = await userDoc.get();
       if (!snapshot.exists) {
@@ -72,7 +72,7 @@ class DocumentService {
   Future<List<String>> fetchLevelsForUser(String matricNumber) async {
     try {
       final userDoc =
-          _firestore.collection('univault').doc('${USER_PREFIX}$matricNumber');
+          _firestore.collection('univault').doc('$USER_PREFIX$matricNumber');
       final snapshot = await userDoc.get();
 
       if (!snapshot.exists) {
@@ -90,7 +90,7 @@ class DocumentService {
   Future<List<DocumentModel>> fetchDocumentsByUser(String matricNumber) async {
     try {
       final userDoc =
-          _firestore.collection('univault').doc('${USER_PREFIX}$matricNumber');
+          _firestore.collection('univault').doc('$USER_PREFIX$matricNumber');
       final userSnapshot = await userDoc.get();
 
       if (!userSnapshot.exists) {
@@ -372,7 +372,7 @@ class DocumentService {
 
       final userDoc = _firestore
           .collection('univault')
-          .doc('${USER_PREFIX}${document.matricNumber}');
+          .doc('$USER_PREFIX${document.matricNumber}');
 
       // Check if user document exists and create if needed
       final userSnapshot = await userDoc.get();
@@ -444,7 +444,7 @@ class DocumentService {
 
       final docRef = _firestore
           .collection('univault')
-          .doc('${USER_PREFIX}${document.matricNumber}')
+          .doc('$USER_PREFIX${document.matricNumber}')
           .collection('levels')
           .doc(document.level)
           .collection('documents')
@@ -490,7 +490,7 @@ class DocumentService {
       }
 
       final userDoc =
-          _firestore.collection('univault').doc('${USER_PREFIX}$matricNumber');
+          _firestore.collection('univault').doc('$USER_PREFIX$matricNumber');
 
       final docRef = userDoc
           .collection('levels')
@@ -527,7 +527,7 @@ class DocumentService {
 
       final docRef = _firestore
           .collection('univault')
-          .doc('${USER_PREFIX}$matricNumber')
+          .doc('$USER_PREFIX$matricNumber')
           .collection('levels')
           .doc(level)
           .collection('documents')
@@ -634,7 +634,7 @@ class DocumentService {
       }
 
       final userDoc =
-          _firestore.collection('univault').doc('${USER_PREFIX}$matricNumber');
+          _firestore.collection('univault').doc('$USER_PREFIX$matricNumber');
       final snapshot = await userDoc.get();
 
       if (!snapshot.exists) {
@@ -655,7 +655,7 @@ class DocumentService {
       }
 
       final userDoc =
-          _firestore.collection('univault').doc('${USER_PREFIX}$matricNumber');
+          _firestore.collection('univault').doc('$USER_PREFIX$matricNumber');
       final userSnapshot = await userDoc.get();
 
       if (!userSnapshot.exists) {

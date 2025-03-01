@@ -10,7 +10,7 @@ class DocumentNavigationProvider extends ChangeNotifier {
   List<DocumentModel> _documents = [];
   List<DocumentModel> _recentDocuments = [];
   List<DocumentModel> _searchResults = [];
-  Map<String, List<String>> _levelsCache = {};
+  final Map<String, List<String>> _levelsCache = {};
   List<DocumentModel> _recentlySearchedDocuments = [];
   int _totalDocumentsCount = 0;
   bool _isLoading = false;

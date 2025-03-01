@@ -8,10 +8,10 @@ class OverviewContent extends StatefulWidget {
   final VoidCallback onSearchPressed;
 
   const OverviewContent({
-    Key? key,
+    super.key,
     required this.onOcrUploadPressed,
     required this.onSearchPressed,
-  }) : super(key: key);
+  });
 
   @override
   State<OverviewContent> createState() => _OverviewContentState();

@@ -21,7 +21,7 @@ class _RootPageState extends State<RootPage> {
   @override
   void initState() {
     super.initState();
-    _resetOtpVerifiedIfLoggedIn(); // Add this
+    // _resetOtpVerifiedIfLoggedIn(); // Add this
   }
 
   Future<void> _resetOtpVerifiedIfLoggedIn() async {

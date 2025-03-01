@@ -75,7 +75,7 @@ class _LandingPageState extends State<LandingPage> {
         decoration: BoxDecoration(
           color: _isScrolled ? Colors.white : Colors.transparent,
           boxShadow: _isScrolled
-              ? [BoxShadow(color: Colors.black26, blurRadius: 5)]
+              ? [const BoxShadow(color: Colors.black26, blurRadius: 5)]
               : [],
         ),
         child: Row(

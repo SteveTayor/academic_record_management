@@ -1,12 +1,3 @@
-import 'package:flutter/material.dart';
-import '../../../../core/model/document_model.dart';
-import '../../../../core/service/document_service.dart';
-import '../../../widgets/sidebar.dart';
-import '../../../widgets/user_folder_item.dart';
-import '../../dashborad/dashboard.dart';
-import 'document_screen.dart';
-import 'user_folder.dart';
-
 // class MainFolderScreen extends StatelessWidget {
 //   final String searchQuery;
 

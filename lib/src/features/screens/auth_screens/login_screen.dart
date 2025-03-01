@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../../core/service/firebase_services.dart';
-import '../dashborad/dashboard.dart';
 import 'enum.dart';
 import 'otp_verification_page.dart';
 import 'validation.dart';

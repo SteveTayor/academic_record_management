@@ -12,8 +12,8 @@ class DocumentListScreen extends StatelessWidget {
   DocumentListScreen({
     required this.matricNumber,
     required this.level,
-    Key? key,
-  }) : super(key: key);
+    super.key,
+  });
 
   @override
   Widget build(BuildContext context) {

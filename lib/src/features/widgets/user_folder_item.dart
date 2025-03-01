@@ -1,8 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../core/model/document_model.dart';
-import 'doc_item.dart';
-
 // class UserFolderItem extends StatelessWidget {
 //   final String userKey;
 //   final List<String> levels;

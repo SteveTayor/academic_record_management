@@ -8,6 +8,7 @@ import '../../../core/providers/document_provider.dart';
 import '../../../core/service/document_service.dart';
 import '../../widgets/dashboard_card.dart';
 import '../../widgets/sidebar.dart';
+import '../other_screens/dcuments/document_detail_screen.dart';
 import '../other_screens/dcuments/document_screen.dart';
 import '../other_screens/document_view_screen.dart';
 import '../other_screens/ocr_screen.dart';
@@ -815,64 +816,84 @@ class _DashboardPageState extends State<DashboardPage> {
       children: [
         // The table
         SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Container(
-            width: MediaQuery.of(context).size.width - 350,
-            margin: const EdgeInsets.all(16),
-            child: DataTable(
-              decoration: BoxDecoration(
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(15),
-                  topRight: Radius.circular(15),
-                ),
-                color: Colors.blueGrey[50],
-              ),
-              // headingRowColor: WidgetStatePropertyAll(Colors.blue[600]),
-              columnSpacing: 24,
-              columns: const [
-                DataColumn(
-                  label: Text('Document',
-                      style: TextStyle(fontWeight: FontWeight.bold)),
-                ),
-                DataColumn(
-                  label: Text('Student',
-                      style: TextStyle(fontWeight: FontWeight.bold)),
-                ),
-                DataColumn(
-                  label: Text('Action',
-                      style: TextStyle(fontWeight: FontWeight.bold)),
-                ),
-                DataColumn(
-                  label: Text('Timestamp',
-                      style: TextStyle(fontWeight: FontWeight.bold)),
-                ),
-                DataColumn(label: Text('')),
-              ],
-              rows: displayedDocs.map((doc) {
-                return DataRow(cells: [
-                  DataCell(Text(doc.documentType.isNotEmpty
-                      ? '${doc.documentType}.pdf'
-                      : 'Unknown.pdf')),
-                  DataCell(Text(doc.userName)),
-                  DataCell(TextButton(
-                    onPressed: () {
-                      // s_showSnack('View action for ${doc.documentType} clicked');
-                    },
-                    child: const Text('Recently Accessed',
-                        style: TextStyle(color: Colors.purple)),
-                  )),
-                  DataCell(Text(_formatTimestamp(doc.timestamp))),
-                  DataCell(
-                    IconButton(
-                      icon: const Icon(Icons.more_vert),
-                      onPressed: () {
-                        _showSnack(
-                            'More options for ${doc.documentType} clicked');
-                      },
-                    ),
+          scrollDirection: Axis.vertical,
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Container(
+              width: MediaQuery.of(context).size.width - 350,
+              margin: const EdgeInsets.all(16),
+              child: DataTable(
+                decoration: BoxDecoration(
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(15),
+                    topRight: Radius.circular(15),
                   ),
-                ]);
-              }).toList(),
+                  color: Colors.blueGrey[50],
+                ),
+                // headingRowColor: WidgetStatePropertyAll(Colors.blue[600]),
+                columnSpacing: 24,
+                columns: const [
+                  DataColumn(
+                    label: Text('Document',
+                        style: TextStyle(fontWeight: FontWeight.bold)),
+                  ),
+                  DataColumn(
+                    label: Text('Student',
+                        style: TextStyle(fontWeight: FontWeight.bold)),
+                  ),
+                  DataColumn(
+                    label: Text('Action',
+                        style: TextStyle(fontWeight: FontWeight.bold)),
+                  ),
+                  DataColumn(
+                    label: Text('Timestamp',
+                        style: TextStyle(fontWeight: FontWeight.bold)),
+                  ),
+                  DataColumn(label: Text('')),
+                ],
+                rows: displayedDocs.map((doc) {
+                  return DataRow(cells: [
+                    DataCell(Text(doc.documentType.isNotEmpty
+                        ? '${doc.documentType}.pdf'
+                        : 'Unknown.pdf')),
+                    DataCell(Text(doc.userName)),
+                    DataCell(TextButton(
+                      onPressed: () {
+                        // s_showSnack('View action for ${doc.documentType} clicked');
+                      },
+                      child: const Text('Recently Accessed',
+                          style: TextStyle(color: Colors.purple)),
+                    )),
+                    DataCell(Text(_formatTimestamp(doc.timestamp))),
+                    DataCell(
+                      PopupMenuButton<String>(
+                        icon: const Icon(Icons.more_vert),
+                        onSelected: (value) => _handleMenuSelection(value, doc),
+                        itemBuilder: (BuildContext context) =>
+                            <PopupMenuEntry<String>>[
+                          const PopupMenuItem<String>(
+                            value: 'view',
+                            child: Text('View Details'),
+                          ),
+                          const PopupMenuItem<String>(
+                            value: 'edit',
+                            child: Text('Edit'),
+                          ),
+                          const PopupMenuItem<String>(
+                            value: 'delete',
+                            child: Text('Delete'),
+                          ),
+                          if (doc.fileUrl.isNotEmpty)
+                            const PopupMenuItem<String>(
+                              value: 'download',
+                              child: Text('Download'),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ]);
+                }).toList(),
+              ),
             ),
           ),
         ),
@@ -938,6 +959,74 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
+  /// Handle the selected menu option
+  void _handleMenuSelection(String value, DocumentModel doc) {
+    final provider =
+        Provider.of<DocumentNavigationProvider>(context, listen: false);
+    switch (value) {
+      case 'view':
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (context) => DocumentDetailScreen(document: doc)),
+        );
+        break;
+      case 'edit':
+        _showSnack('Edit document ${doc.id} - Functionality to be implemented');
+        // TODO: Navigate to an EditDocumentScreen when implemented
+        break;
+      case 'delete':
+        _showDeleteConfirmation(doc, provider);
+        break;
+      case 'download':
+        _downloadDocument(doc.fileUrl);
+        break;
+    }
+  }
+
+  /// Show a confirmation dialog before deleting
+  void _showDeleteConfirmation(
+      DocumentModel doc, DocumentNavigationProvider provider) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Confirm Delete'),
+          content: Text('Are you sure you want to delete ${doc.documentType}?'),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+            TextButton(
+              child: const Text('Delete'),
+              onPressed: () async {
+                try {
+                  await provider.deleteDocument(doc);
+                  _showSnack('Document deleted successfully');
+                } catch (e) {
+                  _showSnack('Error deleting document: $e');
+                }
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  /// Placeholder for downloading a document
+  void _downloadDocument(String url) {
+    _showSnack('Downloading $url');
+    // TODO: Implement actual download logic, e.g., using url_launcher
+    // For web, you could use: html.window.open(url, '_blank');
+  }
+
+  // void _showSnack(String message) {
+  //   ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+  // }
+
   void _showSnack(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message)),
@@ -981,7 +1070,7 @@ class _DashboardPageState extends State<DashboardPage> {
     } else if (menu == 'Users') {
       // TODO: Handle navigation to Users screen.
       // Navigator.push(context, MaterialPageRoute(builder: (_) => UserFolderScreen()));
-      ; // _showSnack('Navigating to Users screen');
+// _showSnack('Navigating to Users screen');
     }
   }
 }
