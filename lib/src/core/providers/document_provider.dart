@@ -3,6 +3,8 @@ import 'dart:developer' as developer;
 
 import '../model/document_model.dart';
 import '../service/document_service.dart';
+import 'error_state.dart';
+import 'loading_State.dart';
 
 class DocumentNavigationProvider extends ChangeNotifier {
   final DocumentService _documentService = DocumentService();
@@ -35,12 +37,47 @@ class DocumentNavigationProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
   bool get hasMoreSearchResults => _hasMoreSearchResults;
+  final LoadingState loadingState = LoadingState();
+  final ErrorState errorState = ErrorState();
+
+  void _setLoading(bool loading, [String? message]) {
+    final previousState = _isLoading;
+    _isLoading = loading;
+
+    if (loading && message != null) {
+      loadingState.startLoading(message);
+    } else if (!loading) {
+      loadingState.stopLoading();
+    }
+
+    if (previousState != loading) {
+      _logInfo('Loading state changed: $loading');
+      notifyListeners();
+    }
+  }
+
+  void _handleError(String errorMessage, [StackTrace? stackTrace]) {
+    _error = errorMessage;
+    errorState.setError(errorMessage,
+        actionLabel: 'Retry', onAction: () => clearError());
+    _logError('Error occurred', errorMessage, stackTrace);
+    _isLoading = false;
+    notifyListeners();
+  }
+
+  // Update your clearError method
+  void clearError() {
+    _logInfo('Clearing error: $_error');
+    _error = null;
+    errorState.clearError();
+    notifyListeners();
+  }
 
   // Fetch all users from Firestore
   Future<void> fetchAllUsers() async {
     _logInfo('Fetching all users...');
     try {
-      _setLoading(true);
+      _setLoading(true, 'Loading users...');
       _users = await _documentService.fetchAllUsers();
       _logSuccess('Successfully fetched ${_users.length} users');
       _setLoading(false);
@@ -438,29 +475,29 @@ class DocumentNavigationProvider extends ChangeNotifier {
   }
 
   // Helper function to set loading state
-  void _setLoading(bool loading) {
-    final previousState = _isLoading;
-    _isLoading = loading;
-    if (previousState != loading) {
-      _logInfo('Loading state changed: $loading');
-      notifyListeners();
-    }
-  }
+  // void _setLoading(bool loading) {
+  //   final previousState = _isLoading;
+  //   _isLoading = loading;
+  //   if (previousState != loading) {
+  //     _logInfo('Loading state changed: $loading');
+  //     notifyListeners();
+  //   }
+  // }
 
   // Helper function to handle errors
-  void _handleError(String errorMessage, [StackTrace? stackTrace]) {
-    _error = errorMessage;
-    _logError('Error occurred', errorMessage, stackTrace);
-    _isLoading = false;
-    notifyListeners();
-  }
+  // void _handleError(String errorMessage, [StackTrace? stackTrace]) {
+  //   _error = errorMessage;
+  //   _logError('Error occurred', errorMessage, stackTrace);
+  //   _isLoading = false;
+  //   notifyListeners();
+  // }
 
-  // Clear any error
-  void clearError() {
-    _logInfo('Clearing error: $_error');
-    _error = null;
-    notifyListeners();
-  }
+  // // Clear any error
+  // void clearError() {
+  //   _logInfo('Clearing error: $_error');
+  //   _error = null;
+  //   notifyListeners();
+  // }
 
   // Log methods for different types of logs
   void _logInfo(String message) {
