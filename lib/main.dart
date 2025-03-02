@@ -17,11 +17,11 @@ void main() async {
   // Set up the SettingsController, which will glue user settings to multiple
   // Flutter Widgets.
   final settingsController = SettingsController(SettingsService());
+  await settingsController.loadSettings();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   FirebaseFirestore.instance.settings = const Settings(
     persistenceEnabled: true,
   );
-  await settingsController.loadSettings();
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   final authService = AuthService();
   await authService.setAuthPersistence();
   runApp(

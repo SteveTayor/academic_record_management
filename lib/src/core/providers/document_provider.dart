@@ -348,6 +348,7 @@ class DocumentNavigationProvider extends ChangeNotifier {
 
       _setLoading(false);
     } catch (e, stackTrace) {
+      _logError('Deleting failed', e, stackTrace);
       _handleError('Error deleting document: $e', stackTrace);
     }
   }

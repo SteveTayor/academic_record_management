@@ -452,11 +452,17 @@ class _SearchScreenState extends State<SearchScreen> {
                                       ],
                                     ),
                                     child: results.isEmpty
-                                        ? Center(
-                                            child: Text(
-                                              hasSearchCriteria
-                                                  ? 'No documents found. Try a different search.'
-                                                  : 'No recently searched documents.',
+                                        ? Padding(
+                                            padding: const EdgeInsets.symmetric(
+                                              vertical: 32,
+                                              horizontal: 16,
+                                            ),
+                                            child: Center(
+                                              child: Text(
+                                                hasSearchCriteria
+                                                    ? 'No documents found. Try a different search.'
+                                                    : 'No recently searched documents.',
+                                              ),
                                             ),
                                           )
                                         : _buildDocumentsList(
@@ -478,6 +484,7 @@ class _SearchScreenState extends State<SearchScreen> {
 
   Widget _buildDocumentsList(
       List<DocumentModel> documents, DocumentNavigationProvider provider) {
+    print('Debug: Building list with ${documents.length} documents');
     return Stack(
       children: [
         ListView.separated(
@@ -495,12 +502,24 @@ class _SearchScreenState extends State<SearchScreen> {
             }
 
             final doc = documents[index];
+            print('Debug: Rendering document ${doc.userName}');
+            if (doc.userName == null || doc.userName.isEmpty) {
+              print('Debug: Invalid document at index $index');
+              return ListTile(title: Text('Invalid Document'));
+            }
+            print('Debug: Rendering document ${doc.userName}');
             return ListTile(
               leading: Icon(
                 _getDocumentIcon(doc.documentType),
                 color: Colors.blue[800],
               ),
-              title: Text(doc.userName),
+              title: Text(doc.userName ?? 'Unknown'),
+              // return ListTile(
+              //   leading: Icon(
+              //     _getDocumentIcon(doc.documentType),
+              //     color: Colors.blue[800],
+              //   ),
+              //   title: Text(doc.userName),
               subtitle: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -809,6 +828,10 @@ class _SearchScreenState extends State<SearchScreen> {
         return Icons.school;
       case 'Letter':
         return Icons.mail;
+      case 'Exam Paper':
+        return Icons.assignment; // Icon for Exam Paper
+      case 'Research Paper':
+        return Icons.article; // Icon for Research Paper
       case 'Other':
         return Icons.card_membership;
       case 'Result':

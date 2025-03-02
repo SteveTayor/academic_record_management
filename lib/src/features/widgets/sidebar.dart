@@ -199,14 +199,22 @@ class _SidebarState extends State<Sidebar> {
         child: ListTile(
           leading: Icon(
             icon,
-            color: isSelected ? Colors.lightBlue[50] : Colors.black,
+            color: isSelected
+                ? Colors.lightBlue[50]
+                : title == 'Logout'
+                    ? Colors.red.shade600
+                    : Colors.black,
           ),
           title: isCollapsed
               ? null
               : Text(
                   title,
                   style: TextStyle(
-                    color: isSelected ? Colors.white : Colors.black,
+                    color: isSelected
+                        ? Colors.white
+                        : title == 'Logout'
+                            ? Colors.red.shade600
+                            : Colors.black,
                     fontWeight:
                         isSelected ? FontWeight.bold : FontWeight.normal,
                   ),
