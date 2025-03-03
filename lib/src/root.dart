@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'core/service/network_service.dart';
 import 'features/screens/auth_screens/login_screen.dart';
-import 'features/screens/auth_screens/otp_verification_page.dart';
 import 'features/screens/dashborad/dashboard.dart';
 import 'features/widgets/no_network.dart';
 
@@ -22,7 +21,7 @@ class _RootPageState extends State<RootPage> {
   @override
   void initState() {
     super.initState();
-    _resetOtpVerifiedIfLoggedIn(); // Add this
+    // _resetOtpVerifiedIfLoggedIn(); // Add this
   }
 
   Future<void> _resetOtpVerifiedIfLoggedIn() async {

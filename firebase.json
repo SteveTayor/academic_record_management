@@ -1,1 +1,77 @@
-{"emulators":{"dataconnect":{"dataDir":"dataconnect/.dataconnect/pgliteData","port":9399},"apphosting":{"port":5002,"rootDirectory":"./"},"auth":{"port":9099},"functions":{"port":5001},"firestore":{"port":8080},"database":{"port":9000},"hosting":{"port":5000},"pubsub":{"port":8085},"storage":{"port":9199},"tasks":{"port":9499},"ui":{"enabled":true},"singleProjectMode":true},"dataconnect":{"source":"dataconnect"},"firestore":{"rules":"firestore.rules","indexes":"firestore.indexes.json"},"functions":[{"source":"functions","codebase":"default","ignore":["node_modules",".git","firebase-debug.log","firebase-debug.*.log","*.local"]}],"hosting":{"public":"public_hosting","ignore":["firebase.json","**/.*","**/node_modules/**"]},"storage":{"rules":"storage.rules"},"remoteconfig":{"template":"remoteconfig.template.json"},"database":{"rules":"database.rules.json"},"flutter":{"platforms":{"android":{"default":{"projectId":"academic-archival-system","appId":"1:861525505716:android:3c2b2933aa924779a5c9e1","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"academic-archival-system","configurations":{"android":"1:861525505716:android:3c2b2933aa924779a5c9e1","ios":"1:861525505716:ios:58ebc24b22083e74a5c9e1","macos":"1:861525505716:ios:58ebc24b22083e74a5c9e1","web":"1:861525505716:web:348c6d33d7ad79d4a5c9e1","windows":"1:861525505716:web:640276c578c8caeca5c9e1"}}}}}}
+{
+  "emulators": {
+    "apphosting": {
+      "port": 5002,
+      "rootDirectory": "./"
+    },
+    "auth": {
+      "port": 9099
+    },
+    "firestore": {
+      "port": 8080
+    },
+    "database": {
+      "port": 9000
+    },
+    "hosting": {
+      "port": 5000
+    },
+    "pubsub": {
+      "port": 8085
+    },
+    "tasks": {
+      "port": 9499
+    },
+    "ui": {
+      "enabled": true
+    },
+    "singleProjectMode": true
+  },
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
+  "hosting": {
+    "public": "build/web",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  },
+  "remoteconfig": {
+    "template": "remoteconfig.template.json"
+  },
+  "database": {
+    "rules": "database.rules.json"
+  },
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "academic-archival-system",
+          "appId": "1:861525505716:android:3c2b2933aa924779a5c9e1",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "academic-archival-system",
+          "configurations": {
+            "android": "1:861525505716:android:3c2b2933aa924779a5c9e1",
+            "ios": "1:861525505716:ios:58ebc24b22083e74a5c9e1",
+            "macos": "1:861525505716:ios:58ebc24b22083e74a5c9e1",
+            "web": "1:861525505716:web:348c6d33d7ad79d4a5c9e1",
+            "windows": "1:861525505716:web:640276c578c8caeca5c9e1"
+          }
+        }
+      }
+    }
+  }
+}

@@ -6,7 +6,7 @@ class DefaultConnector {
   static ConnectorConfig connectorConfig = ConnectorConfig(
     'us-central1',
     'default',
-    'archival_system',
+    'academicrecordmanagement',
   );
 
   DefaultConnector({required this.dataConnect});

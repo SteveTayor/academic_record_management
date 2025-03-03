@@ -22,7 +22,7 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
   final _formKey = GlobalKey<FormState>();
   final _otpController = TextEditingController();
   String _message = '';
-  bool _isLoading = false;
+  final bool _isLoading = false;
 
   final AuthService _authService = AuthService();
 

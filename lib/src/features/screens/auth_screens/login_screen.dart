@@ -5,13 +5,12 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../../core/service/firebase_services.dart';
-import '../dashborad/dashboard.dart';
 import 'enum.dart';
 import 'otp_verification_page.dart';
 import 'validation.dart';
 
 class LoginPage extends StatefulWidget {
-  const LoginPage({Key? key}) : super(key: key);
+  const LoginPage({super.key});
 
   @override
   _LoginPageState createState() => _LoginPageState();
@@ -36,7 +35,7 @@ class _LoginPageState extends State<LoginPage>
 
   // UI state
   String _message = '';
-  LoginStep _currentStep = LoginStep.enterCredentials;
+  final LoginStep _currentStep = LoginStep.enterCredentials;
   var _obscurePassword = true;
   bool _isLoading = false;
 
@@ -438,10 +437,12 @@ class _LoginPageState extends State<LoginPage>
                                                   color: Colors.black),
                                             ),
                                             validator: (value) {
-                                              if (value.isNullOrEmpty)
+                                              if (value.isNullOrEmpty) {
                                                 return 'Email is required.';
-                                              if (!value.isValidEmail)
+                                              }
+                                              if (!value.isValidEmail) {
                                                 return 'Enter a valid email address.';
+                                              }
                                               return null;
                                             },
                                           ),
@@ -520,8 +521,9 @@ class _LoginPageState extends State<LoginPage>
                                               ),
                                             ),
                                             validator: (value) {
-                                              if (value.isNullOrEmpty)
+                                              if (value.isNullOrEmpty) {
                                                 return 'Password is required.';
+                                              }
                                               return null;
                                             },
                                           ),
@@ -593,7 +595,7 @@ class _LoginPageState extends State<LoginPage>
                                         highlightColor: Colors.transparent,
                                         child: Center(
                                           child: _isLoading
-                                              ? SizedBox(
+                                              ? const SizedBox(
                                                   width: 24,
                                                   height: 24,
                                                   child:

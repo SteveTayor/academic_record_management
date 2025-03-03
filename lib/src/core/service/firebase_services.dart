@@ -7,6 +7,14 @@ import 'package:http/http.dart' as http;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+class AppConfig {
+  // This is your deployed Vercel server URL
+  static const String serverUrl = "https://render-node-deployment.vercel.app";
+
+  // For local development, uncomment this line instead
+  // static const String serverUrl = 'http://localhost:3000';
+}
+
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -15,6 +23,7 @@ class AuthService {
   // static const String _apiKey =
   // 'Zoho-enczapikey wSsVR61zqxfzXKl/nGasJr8/nFldD1/2EksviVX3unStH63L8Mcyl0bLBFKvH/dLRzJvFzsW8LkrnB5R2mAJj915zVoIDCiF9mqRe1U4J3x17qnvhDzOW2hVkhqLKYINxAtrmmlnEsAi+g==';
   static const String _fromEmail = 'noreply@joseph-jahazil.name.ng';
+  final String _emailEndpoint = '${AppConfig.serverUrl}/send-email';
 
   // Generate a 6-digit OTP
   String generateOtp() {
@@ -94,7 +103,7 @@ class AuthService {
                         <td style="padding: 25px 40px; background-color: #f8f9fa; border-radius: 0 0 8px 8px;">
                             <p style="color: #999999; margin: 0; font-size: 12px; line-height: 1.6;">
                                 If you didn't request this code, you can safely ignore this email.<br>
-                                © ${DateTime.now().year} University of Ibadan. All rights reserved.
+                                © ${DateTime.now().year} Computer Science. University of Ibadan. All rights reserved.
                             </p>
                         </td>
                     </tr>
@@ -106,7 +115,7 @@ class AuthService {
                         <td>
                             <p style="color: #999999; margin: 0; font-size: 12px; text-align: center;">
                                 Need help? Contact us at 
-                                <a href="mailto:support@ui.edu.ng" style="color: #2b6cde; text-decoration: none;">support@ui.edu.ng</a>
+                                <a href="mailto:support@univault.edu.ng" style="color: #2b6cde; text-decoration: none;">univault.edu.ng</a>
                             </p>
                         </td>
                     </tr>
@@ -120,7 +129,7 @@ class AuthService {
     });
 
     final response = await http.post(
-      Uri.parse('http://localhost:3000/send-email'),
+      Uri.parse(_emailEndpoint),
       headers: headers,
       body: body,
     );

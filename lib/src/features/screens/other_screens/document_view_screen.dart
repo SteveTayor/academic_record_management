@@ -1,101 +1,72 @@
-// import 'package:archival_system/src/features/screens/dashborad/dashboard.dart';
-// import 'package:archival_system/src/features/screens/other_screens/document_overview_screen.dart';
 // import 'package:flutter/material.dart';
-// import 'package:provider/provider.dart';
-
-// // Import your shared Sidebar widget
+// import 'package:flutter/services.dart';
 // import '../../../core/model/document_model.dart';
-// import '../../../core/service/document_service.dart';
-// import '../../widgets/sidebar.dart';
-// import 'ocr_screen.dart';
 
-// // Import your DocumentService and DocumentModel
+// class DocumentDetailScreen extends StatelessWidget {
+//   final DocumentModel document;
 
-// class UserFolderScreen extends StatelessWidget {
-//   UserFolderScreen({Key? key}) : super(key: key);
-
-//   final DocumentService _documentService = DocumentService();
+//   const DocumentDetailScreen({
+//     required this.document,
+//     Key? key,
+//   }) : super(key: key);
 
 //   @override
 //   Widget build(BuildContext context) {
 //     return Scaffold(
-//       body: Row(
-//         children: [
-//           // 1) Reusable Sidebar
-//           Sidebar(
-//             selectedMenu: 'Users', // Example: highlight "Users"
-//             onMenuSelected: (menu) => _onSidebarMenuSelected(menu, context),
+//       appBar: AppBar(
+//         title: Text(document.documentType),
+//         actions: [
+//           IconButton(
+//             icon: const Icon(Icons.share),
+//             onPressed: () {
+//               // Implement share functionality
+//               ScaffoldMessenger.of(context).showSnackBar(
+//                 const SnackBar(
+//                     content: Text('Share functionality coming soon')),
+//               );
+//             },
 //           ),
+//           IconButton(
+//             icon: const Icon(Icons.download),
+//             onPressed: () {
+//               // Implement download functionality
+//               ScaffoldMessenger.of(context).showSnackBar(
+//                 const SnackBar(content: Text('Download started')),
+//               );
+//             },
+//           ),
+//         ],
+//       ),
+//       body: SingleChildScrollView(
+//         child: Column(
+//           crossAxisAlignment: CrossAxisAlignment.start,
+//           children: [
+//             _buildBreadcrumb(context),
+//             _buildDocumentHeader(),
+//             _buildDocumentMetadata(),
+//             _buildDocumentContent(),
+//             _buildActionButtons(context),
+//           ],
+//         ),
+//       ),
+//     );
+//   }
 
-//           // 2) Main Content
+//   Widget _buildBreadcrumb(BuildContext context) {
+//     return Padding(
+//       padding: const EdgeInsets.all(16.0),
+//       child: Row(
+//         children: [
+//           GestureDetector(
+//             onTap: () => Navigator.pop(context),
+//             child: const Text('Back to Documents',
+//                 style: TextStyle(color: Colors.blue)),
+//           ),
+//           const Icon(Icons.chevron_right),
 //           Expanded(
-//             child: FutureBuilder<List<DocumentModel>>(
-//               // Fetch documents for a sample matric number
-//               future: _documentService.fetchDocuments(''),
-//               builder: (context, snapshot) {
-//                 if (snapshot.connectionState == ConnectionState.waiting) {
-//                   return const Center(child: CircularProgressIndicator());
-//                 }
-//                 if (snapshot.hasError) {
-//                   return Center(child: Text('Error: ${snapshot.error}'));
-//                 }
-
-//                 final documents = snapshot.data ?? [];
-
-//                 return Column(
-//                   crossAxisAlignment: CrossAxisAlignment.start,
-//                   children: [
-//                     // Breadcrumb
-//                     Padding(
-//                       padding: const EdgeInsets.all(16.0),
-//                       child: Row(
-//                         children: const [
-//                           Text('Documents'),
-//                           Icon(Icons.chevron_right),
-//                           Text('User Folders'),
-//                         ],
-//                       ),
-//                     ),
-//                     // Title
-//                     Padding(
-//                       padding: const EdgeInsets.symmetric(horizontal: 16.0),
-//                       child: const Text(
-//                         'User Folders',
-//                         style: TextStyle(
-//                           fontSize: 24,
-//                           fontWeight: FontWeight.bold,
-//                         ),
-//                       ),
-//                     ),
-//                     const SizedBox(height: 20),
-//                     // List of User Folders
-//                     Expanded(
-//                       child: Padding(
-//                         padding: const EdgeInsets.all(16.0),
-//                         child: ListView.builder(
-//                           itemCount: documents.length,
-//                           itemBuilder: (context, index) {
-//                             final doc = documents[index];
-//                             return _UserFolderItem(
-//                               name: doc.userName,
-//                               matricNumber: doc.matricNumber,
-//                               level: doc.level,
-//                               documents: [
-//                                 _DocumentItem(
-//                                   name: 'Document ${index + 1}',
-//                                   type: doc.documentType,
-//                                   date: doc.timestamp.toString(),
-//                                   hasStructuredData: doc.structuredData != null,
-//                                 ),
-//                               ],
-//                             );
-//                           },
-//                         ),
-//                       ),
-//                     ),
-//                   ],
-//                 );
-//               },
+//             child: Text(
+//               document.documentType,
+//               overflow: TextOverflow.ellipsis,
 //             ),
 //           ),
 //         ],
@@ -103,100 +74,243 @@
 //     );
 //   }
 
-//   // Handle sidebar navigation
-//   void _onSidebarMenuSelected(String menu, BuildContext context) {
-//     if (menu == 'Overview') {
-//       // TODO: Navigate to your Overview screen
-//       Navigator.push(
-//           context, MaterialPageRoute(builder: (_) => const DashboardPage()));
-//       ScaffoldMessenger.of(context).showSnackBar(
-//         const SnackBar(content: Text('Navigate to Overview')),
-//       );
-//     } else if (menu == 'Documents') {
-//       // TODO: Navigate to Documents screen
-//       // Navigator.push(
-//       //   context,
-//       //   MaterialPageRoute(builder: (_) => const DocumentOverviewScreen()),
-//       // );
-//       // ScaffoldMessenger.of(context).showSnackBar(
-//       //   const SnackBar(content: Text('Navigate to Documents')),
-//       // );
-//     } else if (menu == 'Users') {
-//       // Already on "Users" (User Folder Screen)
-//     } else {
-//       // Add more logic if needed
-//       ScaffoldMessenger.of(context).showSnackBar(
-//         SnackBar(content: Text('Navigate to $menu')),
-//       );
-//     }
-//   }
-// }
-
-// // --------------------------------------------------------------------
-// //  The expanded user folder item, containing one or more documents
-// // --------------------------------------------------------------------
-// class _UserFolderItem extends StatelessWidget {
-//   final String name;
-//   final String matricNumber;
-//   final String level;
-//   final List<_DocumentItem> documents;
-
-//   const _UserFolderItem({
-//     required this.name,
-//     required this.matricNumber,
-//     required this.level,
-//     required this.documents,
-//   });
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return ExpansionTile(
-//       leading: const Icon(Icons.folder_outlined, color: Colors.blue),
-//       title: Text(name),
-//       subtitle: Text('$matricNumber - $level'),
-//       children: documents,
-//     );
-//   }
-// }
-
-// // --------------------------------------------------------------------
-// //  Individual document item inside a user folder
-// // --------------------------------------------------------------------
-// class _DocumentItem extends StatelessWidget {
-//   final String name;
-//   final String type;
-//   final String date;
-//   final bool hasStructuredData;
-
-//   const _DocumentItem({
-//     required this.name,
-//     required this.type,
-//     required this.date,
-//     required this.hasStructuredData,
-//   });
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return ListTile(
-//       leading: Icon(
-//         type == 'Transcript' ? Icons.description : Icons.mail_outline,
-//         color: Colors.grey,
-//       ),
-//       title: Text(name),
-//       subtitle: Text(type),
-//       trailing: Row(
-//         mainAxisSize: MainAxisSize.min,
+//   Widget _buildDocumentHeader() {
+//     return Container(
+//       width: double.infinity,
+//       padding: const EdgeInsets.all(16.0),
+//       color: Colors.grey[100],
+//       child: Column(
+//         crossAxisAlignment: CrossAxisAlignment.center,
 //         children: [
-//           if (hasStructuredData)
-//             const Icon(Icons.data_array, color: Colors.green),
-//           const SizedBox(width: 8),
-//           Text(date),
-//           const SizedBox(width: 16),
-//           const Icon(Icons.visibility_outlined),
-//           const SizedBox(width: 8),
-//           const Icon(Icons.download),
+//           _getDocumentIconLarge(document.documentType),
+//           const SizedBox(height: 16),
+//           Text(
+//             document.documentType,
+//             style: const TextStyle(
+//               fontSize: 24,
+//               fontWeight: FontWeight.bold,
+//             ),
+//           ),
+//           const SizedBox(height: 8),
+//           Text(
+//             'Document ID: ${document.id}',
+//             style: TextStyle(
+//               color: Colors.grey[700],
+//             ),
+//           ),
 //         ],
 //       ),
 //     );
+//   }
+
+//   Widget _buildDocumentMetadata() {
+//     return Padding(
+//       padding: const EdgeInsets.all(16.0),
+//       child: Card(
+//         child: Padding(
+//           padding: const EdgeInsets.all(16.0),
+//           child: Column(
+//             crossAxisAlignment: CrossAxisAlignment.start,
+//             children: [
+//               const Text(
+//                 'Document Information',
+//                 style: TextStyle(
+//                   fontSize: 18,
+//                   fontWeight: FontWeight.bold,
+//                 ),
+//               ),
+//               const SizedBox(height: 16),
+//               _buildInfoRow('Student ID', document.matricNumber),
+//               _buildInfoRow('Level', document.level),
+//               _buildInfoRow('Date Processed', _formatDate(document.timestamp)),
+//               _buildInfoRow(
+//                   'File Format', _getFileFormat(document.documentType)),
+//               _buildInfoRow('Name', document.userName),
+//             ],
+//           ),
+//         ),
+//       ),
+//     );
+//   }
+
+//   Widget _buildInfoRow(String label, String value) {
+//     return Padding(
+//       padding: const EdgeInsets.only(bottom: 12.0),
+//       child: Row(
+//         crossAxisAlignment: CrossAxisAlignment.start,
+//         children: [
+//           SizedBox(
+//             width: 120,
+//             child: Text(
+//               label,
+//               style: const TextStyle(
+//                 fontWeight: FontWeight.bold,
+//                 color: Colors.grey,
+//               ),
+//             ),
+//           ),
+//           Expanded(
+//             child: Text(
+//               value,
+//               style: const TextStyle(
+//                 fontWeight: FontWeight.w500,
+//               ),
+//             ),
+//           ),
+//           if (label == 'Document ID')
+//             IconButton(
+//               icon: const Icon(Icons.copy, size: 20),
+//               onPressed: () {
+//                 Clipboard.setData(ClipboardData(text: value));
+//                 // Show a snackbar or toast
+//               },
+//             ),
+//         ],
+//       ),
+//     );
+//   }
+
+//   Widget _buildDocumentContent() {
+//     // This would be replaced with actual document content rendering
+//     // For now, just showing a placeholder
+//     return Padding(
+//       padding: const EdgeInsets.all(16.0),
+//       child: Card(
+//         child: Container(
+//           width: double.infinity,
+//           padding: const EdgeInsets.all(16.0),
+//           child: Column(
+//             crossAxisAlignment: CrossAxisAlignment.start,
+//             children: [
+//               const Text(
+//                 'Document Preview',
+//                 style: TextStyle(
+//                   fontSize: 18,
+//                   fontWeight: FontWeight.bold,
+//                 ),
+//               ),
+//               const SizedBox(height: 16),
+//               Container(
+//                 height: 300,
+//                 width: double.infinity,
+//                 decoration: BoxDecoration(
+//                   color: Colors.grey[200],
+//                   borderRadius: BorderRadius.circular(8),
+//                 ),
+//                 child: Center(
+//                   child: Column(
+//                     mainAxisAlignment: MainAxisAlignment.center,
+//                     children: [
+//                       Icon(
+//                         Icons.description,
+//                         size: 64,
+//                         color: Colors.grey[500],
+//                       ),
+//                       const SizedBox(height: 16),
+//                       Text(
+//                         document.structuredData as String? ??
+//                             'Preview not available',
+//                         style: TextStyle(color: Colors.grey[700]),
+//                       ),
+//                     ],
+//                   ),
+//                 ),
+//               ),
+//             ],
+//           ),
+//         ),
+//       ),
+//     );
+//   }
+
+//   Widget _buildActionButtons(BuildContext context) {
+//     return Padding(
+//       padding: const EdgeInsets.all(16.0),
+//       child: Row(
+//         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+//         children: [
+//           ElevatedButton.icon(
+//             icon: const Icon(Icons.download),
+//             label: const Text('Download'),
+//             onPressed: () {
+//               ScaffoldMessenger.of(context).showSnackBar(
+//                 const SnackBar(content: Text('Downloading document...')),
+//               );
+//             },
+//             style: ElevatedButton.styleFrom(
+//               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+//             ),
+//           ),
+//           ElevatedButton.icon(
+//             icon: const Icon(Icons.print),
+//             label: const Text('Print'),
+//             onPressed: () {
+//               ScaffoldMessenger.of(context).showSnackBar(
+//                 const SnackBar(
+//                     content: Text('Preparing document for printing...')),
+//               );
+//             },
+//             style: ElevatedButton.styleFrom(
+//               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+//             ),
+//           ),
+//           ElevatedButton.icon(
+//             icon: const Icon(Icons.share),
+//             label: const Text('Share'),
+//             onPressed: () {
+//               ScaffoldMessenger.of(context).showSnackBar(
+//                 const SnackBar(content: Text('Share options coming soon')),
+//               );
+//             },
+//             style: ElevatedButton.styleFrom(
+//               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+//             ),
+//           ),
+//         ],
+//       ),
+//     );
+//   }
+
+//   Widget _getDocumentIconLarge(String documentType) {
+//     IconData iconData;
+//     Color iconColor;
+
+//     switch (documentType.toLowerCase()) {
+//       case 'transcript':
+//         iconData = Icons.school;
+//         iconColor = Colors.blue;
+//         break;
+//       case 'letter':
+//         iconData = Icons.mail;
+//         iconColor = Colors.green;
+//         break;
+//       default:
+//         iconData = Icons.description;
+//         iconColor = Colors.grey;
+//     }
+
+//     return Container(
+//       padding: const EdgeInsets.all(16),
+//       decoration: BoxDecoration(
+//         color: iconColor.withOpacity(0.1),
+//         shape: BoxShape.circle,
+//       ),
+//       child: Icon(iconData, color: iconColor, size: 64),
+//     );
+//   }
+
+//   String _formatDate(DateTime date) {
+//     return '${date.day}/${date.month}/${date.year}';
+//   }
+
+//   String _getFileFormat(String documentType) {
+//     switch (documentType.toLowerCase()) {
+//       case 'transcript':
+//         return 'PDF';
+//       case 'letter':
+//         return 'PDF';
+//       default:
+//         return 'PDF';
+//     }
 //   }
 // }

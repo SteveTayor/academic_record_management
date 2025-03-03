@@ -1,19 +1,21 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import '../../../core/model/document_model.dart';
-import '../../../core/service/document_service.dart';
-import '../../widgets/sidebar.dart';
+import '../../../core/providers/document_provider.dart';
+import 'package:provider/provider.dart';
+
+import '../other_screens/dcuments/document_detail_screen.dart';
 
 class SearchScreen extends StatefulWidget {
-  final DocumentService documentService;
   final String selectedMenu;
   final Function(String) onMenuSelected;
 
   const SearchScreen({
-    Key? key,
-    required this.documentService,
+    super.key,
     required this.selectedMenu,
     required this.onMenuSelected,
-  }) : super(key: key);
+  });
 
   @override
   _SearchScreenState createState() => _SearchScreenState();
@@ -24,107 +26,124 @@ class _SearchScreenState extends State<SearchScreen> {
   String? selectedDateRange;
   String? selectedLevel;
   String? selectedDocumentType;
-  List<DocumentModel> searchResults = [];
-  bool isLoading = false;
+  bool isSearching = false;
+
+  // Pagination
+  int _currentPage = 1;
+  final int _itemsPerPage = 20;
+  bool _hasMoreItems = true;
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
-    _fetchInitialData();
+    _scrollController.addListener(_scrollListener);
+
+    // Initialize with recent documents
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final provider =
+          Provider.of<DocumentNavigationProvider>(context, listen: false);
+      provider.fetchRecentDocuments(limit: _itemsPerPage);
+    });
   }
 
-  Future<void> _fetchInitialData() async {
-    setState(() {
-      isLoading = true;
-    });
+  @override
+  void dispose() {
+    _scrollController.removeListener(_scrollListener);
+    _scrollController.dispose();
+    _searchController.dispose();
+    super.dispose();
+  }
 
-    try {
-      // Fetch all documents or latest documents as initial data
-      final users = await widget.documentService.fetchAllUsers();
-      if (users.isNotEmpty) {
-        final matricNumber = users.first['matricNumber'] ?? '';
-        if (matricNumber.isNotEmpty) {
-          final docs =
-              await widget.documentService.fetchDocumentsByUser(matricNumber);
-          setState(() {
-            searchResults = docs;
-          });
-        }
+  void _scrollListener() {
+    if (_scrollController.position.pixels ==
+        _scrollController.position.maxScrollExtent) {
+      if (_hasMoreItems && !isSearching) {
+        _loadMoreItems();
       }
-    } catch (e) {
-      _showErrorSnackBar('Error loading documents: ${e.toString()}');
-    } finally {
-      setState(() {
-        isLoading = false;
-      });
     }
   }
 
-  Future<void> _performSearch() async {
+  void _loadMoreItems() {
+    final provider =
+        Provider.of<DocumentNavigationProvider>(context, listen: false);
+    if (provider.isLoading) return;
+
+    setState(() {
+      _currentPage++;
+    });
+
+    // Implement pagination based on search context
+    if (_searchController.text.isNotEmpty) {
+      _performSearch(page: _currentPage, append: true);
+    } else {
+      // Load more recent documents
+      provider.fetchRecentDocuments(
+          limit: _itemsPerPage, offset: (_currentPage - 1) * _itemsPerPage);
+    }
+  }
+
+  Future<void> _performSearch({int page = 1, bool append = false}) async {
     final searchText = _searchController.text.trim();
-    if (searchText.isEmpty) {
-      _showErrorSnackBar('Please enter a search term');
+    if (searchText.isEmpty &&
+        selectedLevel == null &&
+        selectedDocumentType == null &&
+        selectedDateRange == null) {
+      _showErrorSnackBar('Please enter a search term or select filters');
       return;
     }
 
     setState(() {
-      isLoading = true;
+      isSearching = true;
     });
 
     try {
-      // Check if search text is a matric number
-      if (searchText.contains('/')) {
-        final docs =
-            await widget.documentService.fetchDocumentsByUser(searchText);
-        setState(() {
-          searchResults = docs;
-        });
-      } else {
-        // Search by name (we'll need to fetch all users then filter)
-        final users = await widget.documentService.fetchAllUsers();
-        final matchedUsers = users
-            .where((user) =>
-                user['name']
-                    ?.toLowerCase()
-                    .contains(searchText.toLowerCase()) ??
-                false)
-            .toList();
+      final provider =
+          Provider.of<DocumentNavigationProvider>(context, listen: false);
 
-        List<DocumentModel> allDocs = [];
-        for (var user in matchedUsers) {
-          final matricNumber = user['matricNumber'] ?? '';
-          if (matricNumber.isNotEmpty) {
-            final docs =
-                await widget.documentService.fetchDocumentsByUser(matricNumber);
-            allDocs.addAll(docs);
-          }
-        }
+      // Create search parameters object
+      final searchParams = {
+        'query': searchText,
+        'level': selectedLevel,
+        'documentType': selectedDocumentType,
+        'dateRange': selectedDateRange,
+        'page': page,
+        'itemsPerPage': _itemsPerPage,
+      };
 
-        setState(() {
-          searchResults = allDocs;
-        });
-      }
+      // Call provider's search method
+      await provider.searchDocuments(
+        searchParams: searchParams,
+        append: append,
+      );
+
+      // Update pagination state
+      setState(() {
+        _hasMoreItems = provider.hasMoreSearchResults;
+      });
     } catch (e) {
       _showErrorSnackBar('Error searching: ${e.toString()}');
     } finally {
       setState(() {
-        isLoading = false;
+        isSearching = false;
       });
     }
   }
 
-  void _applyFilters() {
+  void _clearSearch() {
     setState(() {
-      // Filter the results based on selected filters
-      if (selectedLevel != null || selectedDocumentType != null) {
-        searchResults = searchResults.where((doc) {
-          bool levelMatch = selectedLevel == null || doc.level == selectedLevel;
-          bool typeMatch = selectedDocumentType == null ||
-              doc.documentType == selectedDocumentType;
-          return levelMatch && typeMatch;
-        }).toList();
-      }
+      _searchController.clear();
+      selectedDateRange = null;
+      selectedLevel = null;
+      selectedDocumentType = null;
+      _currentPage = 1;
+      _hasMoreItems = true;
     });
+
+    final provider =
+        Provider.of<DocumentNavigationProvider>(context, listen: false);
+    provider.clearSearch();
+    // provider.fetchRecentDocuments(limit: _itemsPerPage);
   }
 
   void _showErrorSnackBar(String message) {
@@ -142,12 +161,6 @@ class _SearchScreenState extends State<SearchScreen> {
       body: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Using your existing Sidebar component
-          // Sidebar(
-          //   selectedMenu: widget.selectedMenu,
-          //   onMenuSelected: widget.onMenuSelected,
-          // ),
-
           // Main content
           Expanded(
             child: Padding(
@@ -175,10 +188,7 @@ class _SearchScreenState extends State<SearchScreen> {
                       const Icon(Icons.chevron_right, size: 16),
                       const SizedBox(width: 8),
                       InkWell(
-                        onTap: () {
-                          // Refresh Search page
-                          _fetchInitialData();
-                        },
+                        onTap: _clearSearch,
                         child: Text(
                           'Search',
                           style: TextStyle(
@@ -230,8 +240,17 @@ class _SearchScreenState extends State<SearchScreen> {
                               border: InputBorder.none,
                               hintText: 'Search by student name, matric...',
                               contentPadding:
-                                  EdgeInsets.symmetric(horizontal: 16),
-                              prefixIcon: Icon(Icons.search),
+                                  const EdgeInsets.symmetric(horizontal: 16),
+                              prefixIcon: const Icon(Icons.search),
+                              suffixIcon: _searchController.text.isNotEmpty
+                                  ? IconButton(
+                                      icon: const Icon(Icons.clear),
+                                      onPressed: () {
+                                        _searchController.clear();
+                                        _clearSearch();
+                                      },
+                                    )
+                                  : null,
                             ),
                             onSubmitted: (_) => _performSearch(),
                           ),
@@ -239,7 +258,7 @@ class _SearchScreenState extends State<SearchScreen> {
                       ),
                       const SizedBox(width: 16),
                       ElevatedButton(
-                        onPressed: _performSearch,
+                        onPressed: () => _performSearch(),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.blue[800],
                           foregroundColor: Colors.white,
@@ -249,19 +268,43 @@ class _SearchScreenState extends State<SearchScreen> {
                             borderRadius: BorderRadius.circular(8),
                           ),
                         ),
-                        child: const Text('Advanced Search'),
+                        child: const Text('Search'),
                       ),
                     ],
                   ),
                   const SizedBox(height: 32),
 
                   // Filters section
-                  const Text(
-                    'Filters',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Filters',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      if (selectedDateRange != null ||
+                          selectedLevel != null ||
+                          selectedDocumentType != null)
+                        TextButton.icon(
+                          icon: const Icon(Icons.clear_all),
+                          label: const Text('Clear Filters'),
+                          onPressed: () {
+                            setState(() {
+                              selectedDateRange = null;
+                              selectedLevel = null;
+                              selectedDocumentType = null;
+                            });
+                            if (_searchController.text.isNotEmpty) {
+                              _performSearch();
+                            } else {
+                              _clearSearch();
+                            }
+                          },
+                        ),
+                    ],
                   ),
                   const SizedBox(height: 16),
 
@@ -280,7 +323,7 @@ class _SearchScreenState extends State<SearchScreen> {
                               selectedDateRange,
                               (value) {
                                 setState(() => selectedDateRange = value);
-                                _applyFilters();
+                                _performSearch();
                               },
                             ),
                           ],
@@ -299,7 +342,7 @@ class _SearchScreenState extends State<SearchScreen> {
                               selectedLevel,
                               (value) {
                                 setState(() => selectedLevel = value);
-                                _applyFilters();
+                                _performSearch();
                               },
                               options: [
                                 '100 Level',
@@ -325,12 +368,13 @@ class _SearchScreenState extends State<SearchScreen> {
                               selectedDocumentType,
                               (value) {
                                 setState(() => selectedDocumentType = value);
-                                _applyFilters();
+                                _performSearch();
                               },
                               options: [
                                 'Transcript',
+                                'Exam Paper',
+                                'Research Paper',
                                 'Letter',
-                                'Result',
                                 'Other'
                               ],
                             ),
@@ -342,159 +386,105 @@ class _SearchScreenState extends State<SearchScreen> {
                   const SizedBox(height: 32),
 
                   // Search Results
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Search Results',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Text(
-                        '${searchResults.length} document(s) found',
-                        style: TextStyle(
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
+                  // Consumer<DocumentNavigationProvider>(
+                  //   builder: (context, provider, child) {
+                  //     final List<DocumentModel> results =
+                  //         provider.searchResults.isNotEmpty
+                  //             ? provider.searchResults
+                  //             : provider.recentDocuments;
 
-                  // Results table
-                  Expanded(
-                    child: isLoading
-                        ? const Center(child: CircularProgressIndicator())
-                        : Container(
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(8),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.grey.withOpacity(0.1),
-                                  spreadRadius: 1,
-                                  blurRadius: 2,
+                  //     final String resultsTitle =
+                  //         provider.searchResults.isNotEmpty
+                  //             ? 'Search Results'
+                  //             : 'Recent Documents';
+                  Consumer<DocumentNavigationProvider>(
+                    builder: (context, provider, child) {
+                      if (provider.error != null) {
+                        return Center(
+                            child: SelectableText('Error: ${provider.error}'));
+                      }
+                      // Determine what to display
+                      final bool hasSearchCriteria =
+                          _searchController.text.isNotEmpty ||
+                              selectedLevel != null ||
+                              selectedDocumentType != null ||
+                              selectedDateRange != null;
+                      final List<DocumentModel> results = hasSearchCriteria
+                          ? provider.searchResults
+                          : provider.recentlySearchedDocuments;
+                      final String resultsTitle = hasSearchCriteria
+                          ? 'Search Results'
+                          : 'Recently Searched Documents';
+
+                      return SingleChildScrollView(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  resultsTitle,
+                                  style: const TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                Text(
+                                  '${results.length} document(s) found',
+                                  style: TextStyle(
+                                    color: Colors.grey[600],
+                                  ),
                                 ),
                               ],
                             ),
-                            child: searchResults.isEmpty
-                                ? const Center(
-                                    child: Text(
-                                        'No documents found. Try a different search.'),
-                                  )
-                                : ListView.separated(
-                                    itemCount: searchResults.length,
-                                    separatorBuilder: (context, index) =>
-                                        const Divider(height: 1),
-                                    itemBuilder: (context, index) {
-                                      final doc = searchResults[index];
-                                      return ListTile(
-                                        leading: Icon(
-                                          _getDocumentIcon(doc.documentType),
-                                          color: Colors.blue[800],
-                                        ),
-                                        title: Text(doc.userName),
-                                        subtitle: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Text(doc.matricNumber),
-                                            const SizedBox(height: 4),
-                                            Row(
-                                              children: [
-                                                Container(
-                                                  padding: const EdgeInsets
-                                                      .symmetric(
-                                                    horizontal: 8,
-                                                    vertical: 2,
-                                                  ),
-                                                  decoration: BoxDecoration(
-                                                    color: Colors.blue[50],
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                            4),
-                                                  ),
-                                                  child: Text(
-                                                    doc.documentType,
-                                                    style: TextStyle(
-                                                      fontSize: 12,
-                                                      color: Colors.blue[800],
-                                                    ),
-                                                  ),
-                                                ),
-                                                const SizedBox(width: 8),
-                                                Container(
-                                                  padding: const EdgeInsets
-                                                      .symmetric(
-                                                    horizontal: 8,
-                                                    vertical: 2,
-                                                  ),
-                                                  decoration: BoxDecoration(
-                                                    color: Colors.green[50],
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                            4),
-                                                  ),
-                                                  child: Text(
-                                                    doc.level,
-                                                    style: TextStyle(
-                                                      fontSize: 12,
-                                                      color: Colors.green[800],
-                                                    ),
-                                                  ),
-                                                ),
-                                              ],
+                            const SizedBox(height: 16),
+
+                            // Results table
+                            Padding(
+                              padding: const EdgeInsets.only(top: 10.0),
+                              child: Expanded(
+                                child: provider.isLoading && results.isEmpty
+                                    ? const Center(
+                                        child: CircularProgressIndicator())
+                                    : Container(
+                                        decoration: BoxDecoration(
+                                          color: Colors.blueGrey[50],
+                                          borderRadius:
+                                              BorderRadius.circular(8),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color:
+                                                  Colors.grey.withOpacity(0.1),
+                                              spreadRadius: 1,
+                                              blurRadius: 2,
                                             ),
                                           ],
                                         ),
-                                        trailing: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Text(
-                                              _formatDate(doc.timestamp),
-                                              style: TextStyle(
-                                                color: Colors.grey[600],
-                                                fontSize: 12,
-                                              ),
-                                            ),
-                                            const SizedBox(width: 16),
-                                            IconButton(
-                                              icon: const Icon(
-                                                  Icons.visibility_outlined),
-                                              onPressed: () {
-                                                // View document
-                                                _showDocumentPreview(doc);
-                                              },
-                                              tooltip: 'View',
-                                            ),
-                                            IconButton(
-                                              icon: const Icon(
-                                                  Icons.download_outlined),
-                                              onPressed: () {
-                                                // Download document
-                                                ScaffoldMessenger.of(context)
-                                                    .showSnackBar(
-                                                  const SnackBar(
-                                                    content: Text(
-                                                        'Download functionality will be implemented'),
+                                        child: results.isEmpty
+                                            ? Padding(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                  vertical: 32,
+                                                  horizontal: 16,
+                                                ),
+                                                child: Center(
+                                                  child: Text(
+                                                    hasSearchCriteria
+                                                        ? 'No documents found. Try a different search.'
+                                                        : 'No recently searched documents.',
                                                   ),
-                                                );
-                                              },
-                                              tooltip: 'Download',
-                                            ),
-                                          ],
-                                        ),
-                                        contentPadding:
-                                            const EdgeInsets.symmetric(
-                                                horizontal: 16, vertical: 8),
-                                        visualDensity:
-                                            VisualDensity.comfortable,
-                                        onTap: () => _showDocumentPreview(doc),
-                                      );
-                                    },
-                                  ),
-                          ),
+                                                ),
+                                              )
+                                            : _buildDocumentsList(
+                                                results, provider),
+                                      ),
+                              ),
+                            )
+                          ],
+                        ),
+                      );
+                    },
                   ),
                 ],
               ),
@@ -502,6 +492,138 @@ class _SearchScreenState extends State<SearchScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildDocumentsList(
+      List<DocumentModel> documents, DocumentNavigationProvider provider) {
+    print('Debug: Building list with ${documents.length} documents');
+    return ListView.separated(
+      controller: _scrollController,
+      shrinkWrap: true,
+      itemCount: documents.length + (_hasMoreItems ? 1 : 0),
+      separatorBuilder: (context, index) => const Divider(height: 1),
+      itemBuilder: (context, index) {
+        // Show loading indicator at the bottom while loading more items
+        if (index == documents.length) {
+          return Container(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            alignment: Alignment.center,
+            child: const CircularProgressIndicator(),
+          );
+        }
+
+        final doc = documents[index];
+        if (doc.userName.isEmpty) {
+          print('Debug: Invalid document at index $index');
+          return const ListTile(title: Text('Invalid Document'));
+        }
+        print('Debug: Rendering document ${doc.userName}');
+        return Card(
+          elevation: 0,
+          child: ListTile(
+            leading: Icon(
+              _getDocumentIcon(doc.documentType),
+              color: Colors.blue[800],
+            ),
+            title: Text(doc.userName ?? 'Unknown'),
+            // return ListTile(
+            //   leading: Icon(
+            //     _getDocumentIcon(doc.documentType),
+            //     color: Colors.blue[800],
+            //   ),
+            //   title: Text(doc.userName),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(doc.matricNumber),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.blue[50],
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        doc.documentType,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.blue[800],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.green[50],
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        doc.level,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.green[800],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  _formatDate(doc.timestamp),
+                  style: TextStyle(
+                    color: Colors.grey[600],
+                    fontSize: 12,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                IconButton(
+                  icon: const Icon(Icons.visibility_outlined),
+                  onPressed: () {
+                    _showDocumentPreview(doc);
+                  },
+                  tooltip: 'View',
+                ),
+                IconButton(
+                  icon: const Icon(Icons.download_outlined),
+                  onPressed: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content:
+                            Text('Download functionality will be implemented'),
+                      ),
+                    );
+                  },
+                  tooltip: 'Download',
+                ),
+              ],
+            ),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            visualDensity: VisualDensity.comfortable,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => DocumentDetailScreen(document: doc)),
+              );
+            },
+          ),
+        );
+      },
     );
   }
 
@@ -568,16 +690,19 @@ class _SearchScreenState extends State<SearchScreen> {
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   ElevatedButton.icon(
-                    icon: const Icon(Icons.download_outlined),
-                    label: const Text('Download'),
+                    icon: const Icon(Icons.close),
+                    label: const Text(
+                      'close',
+                      style: TextStyle(color: Colors.white),
+                    ),
                     onPressed: () {
                       Navigator.pop(context);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                              'Download functionality will be implemented'),
-                        ),
-                      );
+                      // ScaffoldMessenger.of(context).showSnackBar(
+                      //   const SnackBar(
+                      //     content: Text(
+                      //         'Download functionality will be implemented'),
+                      //   ),
+                      // );
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.blue[800],
@@ -613,7 +738,23 @@ class _SearchScreenState extends State<SearchScreen> {
             fontSize: 14,
           ),
         ),
-        trailing: Icon(icon),
+        trailing: selectedValue != null
+            ? IconButton(
+                icon: const Icon(Icons.clear),
+                onPressed: () {
+                  setState(() {
+                    if (placeholder.contains('level')) {
+                      selectedLevel = null;
+                    } else if (placeholder.contains('type')) {
+                      selectedDocumentType = null;
+                    } else if (placeholder.contains('date')) {
+                      selectedDateRange = null;
+                    }
+                  });
+                  _performSearch();
+                },
+              )
+            : Icon(icon),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16),
         dense: true,
         onTap: () {
@@ -645,9 +786,6 @@ class _SearchScreenState extends State<SearchScreen> {
             // For date range, show date picker
             if (placeholder.contains('date')) {
               _showDateRangePicker(onChanged);
-            } else {
-              // Default behavior - set a sample value
-              onChanged('Sample ${placeholder.split(' ').last}');
             }
           }
         },
@@ -687,6 +825,10 @@ class _SearchScreenState extends State<SearchScreen> {
         return Icons.school;
       case 'Letter':
         return Icons.mail;
+      case 'Exam Paper':
+        return Icons.assignment; // Icon for Exam Paper
+      case 'Research Paper':
+        return Icons.article; // Icon for Research Paper
       case 'Other':
         return Icons.card_membership;
       case 'Result':

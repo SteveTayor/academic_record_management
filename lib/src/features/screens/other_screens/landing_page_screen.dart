@@ -1,33 +1,183 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:lottie/lottie.dart';
 
 import '../auth_screens/admin_signup.dart';
 import '../auth_screens/login_screen.dart';
 
-class LandingPage extends StatelessWidget {
+class LandingPage extends StatefulWidget {
   const LandingPage({super.key});
+
+  @override
+  State<LandingPage> createState() => _LandingPageState();
+}
+
+class _LandingPageState extends State<LandingPage> {
+  final ScrollController _scrollController = ScrollController();
+  bool _isScrolled = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(() {
+      if (_scrollController.offset > 50 && !_isScrolled) {
+        setState(() {
+          _isScrolled = true;
+        });
+      } else if (_scrollController.offset <= 50 && _isScrolled) {
+        setState(() {
+          _isScrolled = false;
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SingleChildScrollView(
-        child: Column(
+      body: Stack(
+        children: [
+          SingleChildScrollView(
+            controller: _scrollController,
+            child: Column(
+              children: [
+                const SizedBox(height: 80), // Space for the fixed navbar
+                _buildTopSection(context),
+                _buildWhyChooseUs(),
+                _buildFeatureCards(),
+                _buildStatistics(),
+                _buildTestimonials(),
+                _buildCTA(context),
+                _buildFooter(),
+              ],
+            ),
+          ),
+          _buildNavBar(context),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNavBar(BuildContext context) {
+    return Positioned(
+      top: 0,
+      left: 0,
+      right: 0,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+        decoration: BoxDecoration(
+          color: _isScrolled ? Colors.white : Colors.transparent,
+          boxShadow: _isScrolled
+              ? [const BoxShadow(color: Colors.black26, blurRadius: 5)]
+              : [],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            _buildTopSection(context),
-            _buildWhyChooseUs(),
-            _buildFeatureCards(),
-            _buildStatistics(),
-            _buildTestimonials(),
-            _buildCTA(context),
-            _buildFooter(),
+            Row(
+              children: [
+                Image.asset(
+                  'assets/images/university-of-ibadan-logo-transparent.png',
+                  height: 50,
+                  width: 50,
+                  fit: BoxFit.fitHeight,
+                ),
+                Text('UniVault',
+                    style: GoogleFonts.poppins(
+                      fontSize: 35,
+                      fontWeight: FontWeight.bold,
+                      color: _isScrolled ? Colors.blue[800] : Colors.black,
+                    )),
+              ],
+            ),
+            Row(
+              children: [
+                _navButton('Features'),
+                _navButton('Why Us'),
+                _navButton('Testimonials'),
+                _navButton('Contact'),
+              ],
+            ),
+            Row(
+              children: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => const LoginPage()));
+                  },
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 14),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      side: BorderSide(
+                        color: Colors.blue.shade800,
+                        width: 1.5,
+                      ),
+                    ),
+                  ),
+                  child: Text('Login',
+                      style: GoogleFonts.poppins(
+                        color:
+                            _isScrolled ? Colors.blue[800] : Colors.blue[800],
+                        fontWeight: FontWeight.w500,
+                      )),
+                ),
+                const SizedBox(width: 10),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue[800],
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  onPressed: () {
+                    Navigator.of(context).push(MaterialPageRoute(
+                        builder: (_) => const AdminRegistrationPage()));
+                  },
+                  child: Text('Sign Up',
+                      style: GoogleFonts.poppins(
+                        fontWeight: FontWeight.bold,
+                      )),
+                ),
+              ],
+            ),
           ],
         ),
       ),
     );
   }
 
+  Widget _navButton(String text) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 15),
+      child: TextButton(
+        onPressed: () {},
+        child: Text(text,
+            style: GoogleFonts.poppins(
+              color: _isScrolled ? Colors.blue[800] : Colors.black,
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+            )),
+      ),
+    );
+  }
+
   Widget _buildTopSection(BuildContext context) {
     return Container(
+      padding: const EdgeInsets.only(top: 20), // Avoid overlapping navbar
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
@@ -41,98 +191,121 @@ class LandingPage extends StatelessWidget {
       ),
       child: Column(
         children: [
-          _buildNavBar(context),
-          _buildHeroSection(),
+          _buildHeroSection(context),
         ],
       ),
     );
   }
 
-  Widget _buildNavBar(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 20),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
-            children: [
-              SizedBox(width: 10),
-              Image.asset(
-                'assets/images/university-of-ibadan-logo-transparent.png',
-                height: 50,
-                width: 50,
-                fit: BoxFit.fitHeight,
-              ),
-              Text('UniVault',
-                  style: GoogleFonts.poppins(
-                    fontSize: 35,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  )),
-            ],
-          ),
-          Row(
-            children: [
-              _navButton('Features'),
-              _navButton('Why Us'),
-              _navButton('Testimonials'),
-              _navButton('Contact'),
-            ],
-          ),
-          Row(
-            children: [
-              TextButton(
-                onPressed: () {
-                  Navigator.push(context,
-                      MaterialPageRoute(builder: (context) => LoginPage()));
-                },
-                child: Text('Login',
-                    style: GoogleFonts.poppins(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w500,
-                    )),
-              ),
-              const SizedBox(width: 10),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  foregroundColor: Colors.blue[800],
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                onPressed: () {
-                  Navigator.of(context).push(MaterialPageRoute(
-                      builder: (_) => const AdminRegistrationPage()));
-                },
-                child: Text('Sign Up',
-                    style: GoogleFonts.poppins(
-                      fontWeight: FontWeight.bold,
-                    )),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
+  // Widget _buildTopSection(BuildContext context) {
+  //   return Container(
+  //     decoration: BoxDecoration(
+  //       gradient: LinearGradient(
+  //         begin: Alignment.topLeft,
+  //         end: Alignment.bottomRight,
+  //         colors: [
+  //           Colors.blue.shade800,
+  //           Colors.blue.shade600,
+  //           Colors.blue.shade400,
+  //         ],
+  //       ),
+  //     ),
+  //     child: Column(
+  //       children: [
+  //         _buildNavBar(context),
+  //         _buildHeroSection(context),
+  //       ],
+  //     ),
+  //   );
+  // }
 
-  Widget _navButton(String text) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 15),
-      child: TextButton(
-        onPressed: () {},
-        child: Text(text,
-            style: GoogleFonts.poppins(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-            )),
-      ),
-    );
-  }
+  // Widget _buildNavBar(BuildContext context) {
+  //   return Padding(
+  //     padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 20),
+  //     child: Row(
+  //       mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  //       children: [
+  //         Row(
+  //           children: [
+  //             const SizedBox(width: 10),
+  //             Image.asset(
+  //               'assets/images/university-of-ibadan-logo-transparent.png',
+  //               height: 50,
+  //               width: 50,
+  //               fit: BoxFit.fitHeight,
+  //             ),
+  //             Text('UniVault',
+  //                 style: GoogleFonts.poppins(
+  //                   fontSize: 35,
+  //                   fontWeight: FontWeight.bold,
+  //                   color: Colors.white,
+  //                 )),
+  //           ],
+  //         ),
+  //         Row(
+  //           children: [
+  //             _navButton('Features'),
+  //             _navButton('Why Us'),
+  //             _navButton('Testimonials'),
+  //             _navButton('Contact'),
+  //           ],
+  //         ),
+  //         Row(
+  //           children: [
+  //             TextButton(
+  //               onPressed: () {
+  //                 Navigator.push(
+  //                     context,
+  //                     MaterialPageRoute(
+  //                         builder: (context) => const LoginPage()));
+  //               },
+  //               child: Text('Login',
+  //                   style: GoogleFonts.poppins(
+  //                     color: Colors.white,
+  //                     fontWeight: FontWeight.w500,
+  //                   )),
+  //             ),
+  //             const SizedBox(width: 10),
+  //             ElevatedButton(
+  //               style: ElevatedButton.styleFrom(
+  //                 backgroundColor: Colors.white,
+  //                 foregroundColor: Colors.blue[800],
+  //                 shape: RoundedRectangleBorder(
+  //                   borderRadius: BorderRadius.circular(8),
+  //                 ),
+  //               ),
+  //               onPressed: () {
+  //                 Navigator.of(context).push(MaterialPageRoute(
+  //                     builder: (_) => const AdminRegistrationPage()));
+  //               },
+  //               child: Text('Sign Up',
+  //                   style: GoogleFonts.poppins(
+  //                     fontWeight: FontWeight.bold,
+  //                   )),
+  //             ),
+  //           ],
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
 
-  Widget _buildHeroSection() {
+  // Widget _navButton(String text) {
+  //   return Padding(
+  //     padding: const EdgeInsets.symmetric(horizontal: 15),
+  //     child: TextButton(
+  //       onPressed: () {},
+  //       child: Text(text,
+  //           style: GoogleFonts.poppins(
+  //             color: Colors.white,
+  //             fontSize: 16,
+  //             fontWeight: FontWeight.w500,
+  //           )),
+  //     ),
+  //   );
+  // }
+
+  Widget _buildHeroSection(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 100, horizontal: 40),
       child: Row(
@@ -170,7 +343,10 @@ class LandingPage extends StatelessWidget {
                           borderRadius: BorderRadius.circular(8),
                         ),
                       ),
-                      onPressed: () {},
+                      onPressed: () {
+                        Navigator.of(context).push(MaterialPageRoute(
+                            builder: (_) => const AdminRegistrationPage()));
+                      },
                       child: Text('Get Started',
                           style: GoogleFonts.poppins(
                             fontSize: 18,
@@ -196,9 +372,10 @@ class LandingPage extends StatelessWidget {
           ),
           Expanded(
             flex: 2,
-            child: Image.asset(
-              'assets/images/document-illustration.png',
-              // If this asset doesn't exist, you'll need to add it or replace with another available image
+            child: Lottie.asset(
+              'assets/lottie/document-illustration.json',
+              // width: 200,
+              // height: 200,
               fit: BoxFit.contain,
               errorBuilder: (context, error, stackTrace) {
                 return Container(
@@ -217,6 +394,27 @@ class LandingPage extends StatelessWidget {
                 );
               },
             ),
+            // Image.asset(
+            //   'assets/images/document-illustration.png',
+            //   // If this asset doesn't exist, you'll need to add it or replace with another available image
+            //   fit: BoxFit.contain,
+            //   errorBuilder: (context, error, stackTrace) {
+            //     return Container(
+            //       height: 350,
+            //       decoration: BoxDecoration(
+            //         color: Colors.white.withOpacity(0.2),
+            //         borderRadius: BorderRadius.circular(20),
+            //       ),
+            //       child: Center(
+            //         child: Icon(
+            //           Icons.insert_drive_file,
+            //           size: 120,
+            //           color: Colors.white.withOpacity(0.7),
+            //         ),
+            //       ),
+            //     );
+            //   },
+            // ),
           ),
         ],
       ),
@@ -573,7 +771,7 @@ class LandingPage extends StatelessWidget {
                         width: 40,
                         fit: BoxFit.fitHeight,
                         errorBuilder: (context, error, stackTrace) {
-                          return Icon(Icons.school,
+                          return const Icon(Icons.school,
                               size: 40, color: Colors.white);
                         },
                       ),

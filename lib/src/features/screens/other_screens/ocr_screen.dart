@@ -1,7 +1,5 @@
 import 'dart:async';
-import 'dart:typed_data';
 
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:file_picker/file_picker.dart';
@@ -24,7 +22,7 @@ import '../../../core/service/document_service.dart';
 import '../../widgets/sidebar.dart';
 
 class OcrUploadScreen extends StatefulWidget {
-  const OcrUploadScreen({Key? key}) : super(key: key);
+  const OcrUploadScreen({super.key});
 
   @override
   State<OcrUploadScreen> createState() => _OcrUploadScreenState();
@@ -203,7 +201,7 @@ class _OcrUploadScreenState extends State<OcrUploadScreen> {
   // ----------------------------------------
   Widget _buildPreviewUI(BuildContext context) {
     // If you want to change breadcrumbs once in preview:
-    final breadcrumbs = 'Documents > OCR Upload > Preview';
+    const breadcrumbs = 'Documents > OCR Upload > Preview';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -380,6 +378,10 @@ class _OcrUploadScreenState extends State<OcrUploadScreen> {
               _selectedLevel = '${(index + 1) * 100} Level';
             });
           },
+          color: Colors.grey,
+          selectedColor: Colors.white,
+          fillColor: Colors.purple,
+          borderRadius: const BorderRadius.all(Radius.circular(8)),
           children: const [
             Padding(
                 padding: EdgeInsets.symmetric(horizontal: 16),
@@ -394,10 +396,6 @@ class _OcrUploadScreenState extends State<OcrUploadScreen> {
                 padding: EdgeInsets.symmetric(horizontal: 16),
                 child: Text('400 Level')),
           ],
-          color: Colors.grey,
-          selectedColor: Colors.white,
-          fillColor: Colors.purple,
-          borderRadius: BorderRadius.all(Radius.circular(8)),
         ),
       ],
     );

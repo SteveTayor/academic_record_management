@@ -45,7 +45,7 @@ import '../../core/model/document_model.dart';
 class DocumentItem extends StatelessWidget {
   final DocumentModel document;
 
-  const DocumentItem({required this.document});
+  const DocumentItem({super.key, required this.document});
 
   @override
   Widget build(BuildContext context) {

@@ -1,14 +1,32 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../../../core/providers/document_provider.dart';
+import '../student_folder/stu_folder.dart';
 
-class OverviewContent extends StatelessWidget {
+class OverviewContent extends StatefulWidget {
   final VoidCallback onOcrUploadPressed;
   final VoidCallback onSearchPressed;
 
   const OverviewContent({
-    Key? key,
+    super.key,
     required this.onOcrUploadPressed,
     required this.onSearchPressed,
-  }) : super(key: key);
+  });
+
+  @override
+  State<OverviewContent> createState() => _OverviewContentState();
+}
+
+class _OverviewContentState extends State<OverviewContent> {
+  @override
+  void initState() {
+    super.initState();
+    // Fetch data when widget initializes
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<DocumentNavigationProvider>(context, listen: false)
+          .fetchAllUsers();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -18,14 +36,27 @@ class OverviewContent extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Documents > Overview',
-              style: TextStyle(color: Colors.grey, fontSize: 14),
+            Row(
+              children: [
+                GestureDetector(
+                  onTap: () {},
+                  child: const Text(
+                    'Documents',
+                    style: TextStyle(color: Colors.blue),
+                  ),
+                ),
+                const Icon(Icons.chevron_right),
+                const Text('Overview'),
+              ],
             ),
+            // const Text(
+            //   'Documents > Overview',
+            //   style: TextStyle(color: Colors.grey, fontSize: 14),
+            // ),
             const SizedBox(height: 16),
             _buildHeaderCards(context),
             const SizedBox(height: 24),
-            _buildRecentDocumentsTable(context),
+            _buildStudentsTable(context),
           ],
         ),
       ),
@@ -42,7 +73,7 @@ class OverviewContent extends StatelessWidget {
             description:
                 'Convert scanned documents into searchable text using OCR technology',
             buttonText: 'Process Documents',
-            onPressed: onOcrUploadPressed,
+            onPressed: widget.onOcrUploadPressed,
             context: context,
           ),
         ),
@@ -54,7 +85,7 @@ class OverviewContent extends StatelessWidget {
             description:
                 'Search through processed documents using keywords and filters',
             buttonText: 'Search Documents',
-            onPressed: onSearchPressed,
+            onPressed: widget.onSearchPressed,
             context: context,
           ),
         ),
@@ -104,78 +135,92 @@ class OverviewContent extends StatelessWidget {
     );
   }
 
-  Widget _buildRecentDocumentsTable(BuildContext context) {
-    final documents = [
-      {
-        'fileName': 'Transcript.pdf',
-        'status': 'Processed',
-        'category': '300 Level',
-        'date': '2 hours ago'
-      },
-      {
-        'fileName': 'Letter.pdf',
-        'status': 'Processed',
-        'category': '200 Level',
-        'date': '1 day ago'
-      },
-      {
-        'fileName': 'Report.pdf',
-        'status': 'Processed',
-        'category': '400 Level',
-        'date': '3 days ago'
-      },
-    ];
-
+  Widget _buildStudentsTable(BuildContext context) {
     return Expanded(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Recent Documents',
+            'Available Student Documents',
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
           Expanded(
-            child: Container(
-              width: MediaQuery.of(context).size.width,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8),
-                color: Colors.white,
-              ),
-              child: DataTable(
-                columns: const [
-                  DataColumn(label: Text('File Name')),
-                  DataColumn(label: Text('Status')),
-                  DataColumn(label: Text('Category')),
-                  DataColumn(label: Text('Date')),
-                  DataColumn(label: Text('Actions')),
-                ],
-                rows: documents.map((doc) {
-                  return DataRow(
-                    cells: [
-                      DataCell(Text(doc['fileName']!)),
-                      DataCell(Text(doc['status']!)),
-                      DataCell(Text(doc['category']!)),
-                      DataCell(Text(doc['date']!)),
-                      DataCell(
-                        Row(
-                          children: [
-                            IconButton(
-                              icon: const Icon(Icons.edit),
-                              onPressed: () => print('Edit ${doc['fileName']}'),
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.delete),
-                              onPressed: () =>
-                                  print('Delete ${doc['fileName']}'),
-                            ),
-                          ],
+            // Use Consumer to listen to provider changes
+            child: Consumer<DocumentNavigationProvider>(
+              builder: (context, provider, child) {
+                if (provider.isLoading) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                if (provider.error != null) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text('Error: ${provider.error}'),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: () {
+                            provider.clearError();
+                            provider.fetchAllUsers();
+                          },
+                          child: const Text('Retry'),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   );
-                }).toList(),
-              ),
+                }
+
+                final users = provider.users;
+                if (users.isEmpty) {
+                  return const Center(child: Text('No students found'));
+                }
+
+                return Container(
+                  width: MediaQuery.of(context).size.width,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    color: Colors.white,
+                  ),
+                  child: DataTable(
+                    columns: const [
+                      DataColumn(label: Text('Student Name')),
+                      DataColumn(label: Text('Matric Number')),
+                      DataColumn(label: Text('Actions')),
+                    ],
+                    rows: users.map((student) {
+                      return DataRow(
+                        cells: [
+                          DataCell(Text(student['name'] ?? 'Unknown')),
+                          DataCell(Text(student['matricNumber'] ?? 'Unknown')),
+                          DataCell(
+                            ElevatedButton(
+                              onPressed: () {
+                                // Pre-fetch documents for this user
+                                provider.fetchDocumentsByUser(
+                                    student['matricNumber'] ?? '');
+
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => UserFolderScreen(
+                                      userName: student['name'] ?? 'Unknown',
+                                      matricNumber:
+                                          student['matricNumber'] ?? '',
+                                    ),
+                                  ),
+                                );
+                              },
+                              child: const Text('View Folders'),
+                            ),
+                          ),
+                        ],
+                      );
+                    }).toList(),
+                  ),
+                );
+              },
             ),
           ),
         ],

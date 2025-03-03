@@ -7,7 +7,7 @@ import 'doc_overview_content.dart';
 import 'ocr_upload_content.dart'; // Import the new widget
 
 class DocumentOverviewScreen extends StatefulWidget {
-  const DocumentOverviewScreen({Key? key}) : super(key: key);
+  const DocumentOverviewScreen({super.key});
 
   @override
   State<DocumentOverviewScreen> createState() => _DocumentOverviewScreenState();
@@ -47,7 +47,7 @@ class _DocumentOverviewScreenState extends State<DocumentOverviewScreen> {
                   case 'search':
                     return MaterialPageRoute(
                       builder: (_) => SearchScreen(
-                        documentService: documentService,
+                        // documentService: documentService,
                         selectedMenu: 'Documents',
                         onMenuSelected: (menu) =>
                             _onSidebarMenuSelected(menu, context),

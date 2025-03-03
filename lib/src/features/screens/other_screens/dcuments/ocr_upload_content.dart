@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import 'package:path_provider/path_provider.dart';
 import '../../../../core/model/document_model.dart';
 import '../../../../core/providers/app_provider.dart';
+import '../../../../core/providers/document_provider.dart';
 import '../../../../core/service/document_service.dart';
 // import 'dart:js' as js;
 import 'dart:js_util' as js_util;
@@ -16,9 +17,12 @@ import 'dart:typed_data';
 import 'package:flutter_tesseract_ocr/flutter_tesseract_ocr.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:html' as html;
+// import 'package:pdf/pdf.dart';
+// import 'package:pdf/widgets.dart' as pw;
+// import 'package:pdf_image_renderer/pdf_image_renderer.dart';
 
 class OcrUploadContent extends StatefulWidget {
-  const OcrUploadContent({Key? key}) : super(key: key);
+  const OcrUploadContent({super.key});
 
   @override
   _OcrUploadContentState createState() => _OcrUploadContentState();
@@ -53,27 +57,63 @@ class _OcrUploadContentState extends State<OcrUploadContent> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.popUntil(
-                        context, (route) => route.settings.name == 'overview');
-                  },
-                  child: const Text('Documents'),
-                ),
-                const Text(' > OCR Upload'),
-              ],
-            ),
-            const SizedBox(height: 16),
-            _isPreviewVisible ? _buildPreviewUI() : _buildUploadUI(),
-          ],
+    return Scaffold(
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  InkWell(
+                    onTap: () {
+                      // Navigate to Documents page
+                      Navigator.of(context).pop();
+                    },
+                    child: Text(
+                      'Documents',
+                      style: TextStyle(
+                        color: Colors.blue[800],
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  const Icon(Icons.chevron_right, size: 16),
+                  const SizedBox(width: 8),
+                  InkWell(
+                    onTap: () {
+                      // Navigator.of(context).pop();
+                    },
+                    child: Text(
+                      'OCR Upload',
+                      style: TextStyle(
+                        color: Colors.blue[800],
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+
+              // Row(
+              //   children: [
+              //     TextButton(
+              //       onPressed: () {
+              //         Navigator.popUntil(
+              //             context, (route) => route.settings.name == 'overview');
+              //       },
+              //       child: const Text('Documents'),
+              //     ),
+              //     const Text(' > OCR Upload'),
+              //   ],
+              // ),
+              const SizedBox(height: 16),
+              _isPreviewVisible ? _buildPreviewUI() : _buildUploadUI(),
+            ],
+          ),
         ),
       ),
     );
@@ -172,8 +212,11 @@ class _OcrUploadContentState extends State<OcrUploadContent> {
         String recognizedText;
 
         if (kIsWeb) {
-          // For web, use the JavaScript function
-          recognizedText = await _performWebOCR(bytes);
+          if (file.extension == 'pdf') {
+            recognizedText = await _performWebOCRFromPDF(bytes);
+          } else {
+            recognizedText = await _performWebOCR(bytes);
+          }
         } else {
           // For mobile, save bytes to temp file and use Tesseract
           final tempPath = await _saveBytesToTempFile(bytes, file.name);
@@ -209,6 +252,26 @@ class _OcrUploadContentState extends State<OcrUploadContent> {
       );
     } finally {
       setState(() => _isProcessing = false);
+    }
+  }
+
+  Future<String> _performWebOCRFromPDF(Uint8List bytes) async {
+    try {
+      final base64PDF = base64Encode(bytes);
+      final dataUri = 'data:application/pdf;base64,$base64PDF';
+
+      // Call JavaScript function
+      final jsResult = await js_util.promiseToFuture<dynamic>(
+          js_util.callMethod(html.window, 'extractTextFromPDF', [dataUri]));
+
+      if (jsResult == null) {
+        throw Exception('OCR returned null result for PDF');
+      }
+
+      return jsResult.toString();
+    } catch (e) {
+      print('Error in _performWebOCRFromPDF: $e');
+      rethrow;
     }
   }
 
@@ -375,7 +438,7 @@ class _OcrUploadContentState extends State<OcrUploadContent> {
           const SizedBox(height: 24),
           _buildStudentDetailsForm(),
           const SizedBox(height: 24),
-          _buildAdminFooter(),
+          // _buildAdminFooter(),
         ],
       ),
     );
@@ -429,7 +492,7 @@ class _OcrUploadContentState extends State<OcrUploadContent> {
                     borderRadius: BorderRadius.circular(15),
                   ),
                   focusedBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.white),
+                    borderSide: const BorderSide(color: Colors.white),
                     borderRadius: BorderRadius.circular(15),
                   ),
                   border: InputBorder.none,
@@ -486,43 +549,89 @@ class _OcrUploadContentState extends State<OcrUploadContent> {
     return TextFormField(
       controller: controller,
       decoration: InputDecoration(
+        fillColor: Colors.blueGrey.shade50,
+        filled: true,
+        enabledBorder: OutlineInputBorder(
+          borderSide: BorderSide(
+              color: controller.text.isNotEmpty
+                  ? Colors.blue.withOpacity(0.3)
+                  : Colors.blueGrey.shade50),
+          borderRadius: BorderRadius.circular(15),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderSide: BorderSide(color: Colors.blue.shade400, width: 2),
+          borderRadius: BorderRadius.circular(15),
+        ),
+        border: InputBorder.none,
         labelText: label,
         hintText: hint,
-        border: const OutlineInputBorder(),
       ),
       validator: (value) => value!.isEmpty ? 'This field is required' : null,
     );
   }
 
+  // Widget _buildLevelSelector() {
+  //   return Column(
+  //     crossAxisAlignment: CrossAxisAlignment.start,
+  //     children: [
+  //       const Text('Academic Level', style: TextStyle(fontSize: 16)),
+  //       const SizedBox(height: 8),
+  //       ToggleButtons(
+  //         isSelected: List.generate(
+  //             4, (i) => _selectedLevel == '${(i + 1) * 100} Level'),
+  //         onPressed: (index) =>
+  //             setState(() => _selectedLevel = '${(index + 1) * 100} Level'),
+  //         children: const [
+  //           Padding(
+  //               padding: EdgeInsets.symmetric(horizontal: 16),
+  //               child: Text('100 Level')),
+  //           Padding(
+  //               padding: EdgeInsets.symmetric(horizontal: 16),
+  //               child: Text('200 Level')),
+  //           Padding(
+  //               padding: EdgeInsets.symmetric(horizontal: 16),
+  //               child: Text('300 Level')),
+  //           Padding(
+  //               padding: EdgeInsets.symmetric(horizontal: 16),
+  //               child: Text('400 Level')),
+  //         ],
+  //         color: Colors.grey,
+  //         selectedColor: Colors.white,
+  //         fillColor: Colors.purple,
+  //         borderRadius: const BorderRadius.all(Radius.circular(8)),
+  //       ),
+  //     ],
+  //   );
+  // }
   Widget _buildLevelSelector() {
+    final academicLevels = [
+      '100 Level',
+      '200 Level',
+      '300 Level',
+      '400 Level',
+      '500 Level'
+    ];
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text('Academic Level', style: TextStyle(fontSize: 16)),
         const SizedBox(height: 8),
-        ToggleButtons(
-          isSelected: List.generate(
-              4, (i) => _selectedLevel == '${(i + 1) * 100} Level'),
-          onPressed: (index) =>
-              setState(() => _selectedLevel = '${(index + 1) * 100} Level'),
-          children: const [
-            Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16),
-                child: Text('100 Level')),
-            Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16),
-                child: Text('200 Level')),
-            Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16),
-                child: Text('300 Level')),
-            Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16),
-                child: Text('400 Level')),
-          ],
-          color: Colors.grey,
-          selectedColor: Colors.white,
-          fillColor: Colors.purple,
-          borderRadius: const BorderRadius.all(Radius.circular(8)),
+        Wrap(
+          spacing: 8, // Horizontal spacing between chips
+          runSpacing: 8, // Vertical spacing between lines
+          children: academicLevels.map((level) {
+            return _AcademicLevelChip(
+              label: level,
+              isSelected: _selectedLevel == level,
+              onSelected: () {
+                setState(() {
+                  _selectedLevel = level;
+                });
+                // Provider.of<AppState>(context, listen: false).setAcademicLevel(level);
+              },
+            );
+          }).toList(),
         ),
       ],
     );
@@ -601,7 +710,8 @@ class _OcrUploadContentState extends State<OcrUploadContent> {
           onPressed: () => Navigator.pop(context),
           style: OutlinedButton.styleFrom(
             side: BorderSide(color: Colors.grey[600]!),
-            padding: const EdgeInsets.symmetric(horizontal: 32),
+            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+            textStyle: const TextStyle(fontSize: 16),
           ),
           child: const Text('Cancel'),
         ),
@@ -609,8 +719,10 @@ class _OcrUploadContentState extends State<OcrUploadContent> {
         ElevatedButton(
           onPressed: _isSaving ? null : _saveDocument,
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.purple[700],
-            padding: const EdgeInsets.symmetric(horizontal: 32),
+            backgroundColor: Colors.blue[800],
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+            textStyle: const TextStyle(fontSize: 16),
           ),
           child: _isSaving
               ? const CircularProgressIndicator(color: Colors.white)
@@ -620,22 +732,22 @@ class _OcrUploadContentState extends State<OcrUploadContent> {
     );
   }
 
-  Widget _buildAdminFooter() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('Admin User',
-              style: TextStyle(fontWeight: FontWeight.bold)),
-          Text('System Administrator',
-              style: TextStyle(color: Colors.grey[600])),
-        ],
-      ),
-    );
-  }
+  // Widget _buildAdminFooter() {
+  //   return Padding(
+  //     padding: const EdgeInsets.symmetric(vertical: 16),
+  //     child: Column(
+  //       crossAxisAlignment: CrossAxisAlignment.start,
+  //       children: [
+  //         const Text('Admin User',
+  //             style: TextStyle(fontWeight: FontWeight.bold)),
+  //         Text('System Administrator',
+  //             style: TextStyle(color: Colors.grey[600])),
+  //       ],
+  //     ),
+  //   );
+  // }
 
-  Future<void> _saveDocument() async {
+  Future _saveDocument() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isSaving = true);
@@ -643,30 +755,23 @@ class _OcrUploadContentState extends State<OcrUploadContent> {
     try {
       final document = DocumentModel(
         id: '',
-        userName: _userNameController.text, // Assuming you have this
-        matricNumber: _matricNumberController.text, // Assuming you have this
-        level: _selectedLevel.replaceAll(' Level', ''), // Adjust as needed
-        text: _extractedTextController.text, // Use the edited text
+        userName: _userNameController.text,
+        matricNumber: _matricNumberController.text,
+        level: _selectedLevel, // Don't modify the level format here
+        text: _extractedTextController.text,
         documentType: _selectedDocType,
         fileUrl: '',
         timestamp: DateTime.now(),
       );
-      // Save the document (e.g., via a provider or service)
-      // Provider.of<AppState>(context, listen: false).setCurrentDocument(document);
-      // final document = DocumentModel(
-      //   id: '',
-      //   userName: _userNameController.text,
-      //   matricNumber: _matricNumberController.text,
-      //   level: _selectedLevel.replaceAll(' Level', ''),
-      //   text: _extractedText,
-      //   documentType: _selectedDocType,
-      //   fileUrl: '',
-      //   timestamp: DateTime.now(),
-      // );
 
-      await _documentService.saveDocument(document);
+      // Using the provider instead of the service directly
+      await Provider.of<DocumentNavigationProvider>(context, listen: false)
+          .saveDocument(document);
+
+      // Set current document
       Provider.of<AppState>(context, listen: false)
           .setCurrentDocument(document);
+
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Document saved successfully')),
@@ -701,6 +806,37 @@ class _DocTypeChip extends StatelessWidget {
         color: isSelected ? Colors.white : Colors.black,
       ),
       onPressed: onSelected,
+    );
+  }
+}
+
+class _AcademicLevelChip extends StatelessWidget {
+  final String label;
+  final bool isSelected;
+  final VoidCallback onSelected;
+
+  const _AcademicLevelChip({
+    required this.label,
+    required this.isSelected,
+    required this.onSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return FilterChip(
+      label: Text(label),
+      selected: isSelected,
+      onSelected: (_) => onSelected(),
+      selectedColor: Colors.purple,
+      labelStyle: TextStyle(
+        color: isSelected ? Colors.white : Colors.black,
+        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+      ),
+      checkmarkColor: Colors.white,
+      backgroundColor: Colors.grey.shade200,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
+      ),
     );
   }
 }

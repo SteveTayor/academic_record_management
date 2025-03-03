@@ -3,21 +3,24 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
+import '../screens/auth_screens/login_screen.dart';
+
 class Sidebar extends StatefulWidget {
   final String selectedMenu;
   final Function(String) onMenuSelected;
 
   const Sidebar({
-    Key? key,
+    super.key,
     required this.selectedMenu,
     required this.onMenuSelected,
-  }) : super(key: key);
+  });
 
   @override
   _SidebarState createState() => _SidebarState();
 }
 
 class _SidebarState extends State<Sidebar> {
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   bool isCollapsed = false;
 
   @override
@@ -99,6 +102,7 @@ class _SidebarState extends State<Sidebar> {
           _buildMenuItem(
               'Documents', Icons.folder, widget.selectedMenu == 'Documents'),
           const Spacer(),
+          _buildMenuItem('Logout', Icons.exit_to_app, false),
           // Admin Info Section
           Padding(
             padding: const EdgeInsets.all(16.0),
@@ -195,20 +199,32 @@ class _SidebarState extends State<Sidebar> {
         child: ListTile(
           leading: Icon(
             icon,
-            color: isSelected ? Colors.lightBlue[50] : Colors.black,
+            color: isSelected
+                ? Colors.lightBlue[50]
+                : title == 'Logout'
+                    ? Colors.red.shade600
+                    : Colors.black,
           ),
           title: isCollapsed
               ? null
               : Text(
                   title,
                   style: TextStyle(
-                    color: isSelected ? Colors.white : Colors.black,
+                    color: isSelected
+                        ? Colors.white
+                        : title == 'Logout'
+                            ? Colors.red.shade600
+                            : Colors.black,
                     fontWeight:
                         isSelected ? FontWeight.bold : FontWeight.normal,
                   ),
                 ),
           onTap: () {
-            widget.onMenuSelected(title);
+            if (title == 'Logout') {
+              _handleLogout(context); // Handle logout action
+            } else {
+              widget.onMenuSelected(title); // Handle menu selection
+            }
           },
           selected: isSelected,
           selectedColor: Colors.blue[800],
@@ -216,5 +232,32 @@ class _SidebarState extends State<Sidebar> {
         ).animate().fadeIn(duration: 300.ms),
       ),
     );
+  }
+
+  Future<void> _resetOtpVerifiedIfLoggedIn() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      await _firestore.collection('admins').doc(user.uid).update({
+        'otpVerified': false,
+      });
+    }
+  }
+
+  Future<void> _handleLogout(BuildContext context) async {
+    try {
+      await FirebaseAuth.instance.signOut();
+      await _resetOtpVerifiedIfLoggedIn();
+      if (context.mounted) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const LoginPage()),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Logout failed: $e')),
+        );
+      }
+    }
   }
 }

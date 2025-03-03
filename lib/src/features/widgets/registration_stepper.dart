@@ -4,8 +4,7 @@ import '../screens/auth_screens/enum.dart';
 class RegistrationStepper extends StatelessWidget {
   final RegistrationStep currentStep;
 
-  const RegistrationStepper({Key? key, required this.currentStep})
-      : super(key: key);
+  const RegistrationStepper({super.key, required this.currentStep});
 
   @override
   Widget build(BuildContext context) {

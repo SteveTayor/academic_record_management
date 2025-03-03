@@ -19,7 +19,7 @@ class DashboardCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: MediaQuery.of(context).size.width * 0.22,
+      width: MediaQuery.of(context).size.width * 0.25,
       child: Card(
         color: Colors.blueGrey[50], // Light purple background
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -29,14 +29,15 @@ class DashboardCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(icon, color: Colors.blue[800], size: 32),
+              Icon(icon, color: Colors.purple[800], size: 32),
               const SizedBox(height: 8),
               Text(
                 title,
                 style: const TextStyle(
-                  fontSize: 16,
+                  fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: Colors.black,
+                  color: Colors.deepPurple,
+                  letterSpacing: 0.2,
                 ),
               ),
               const SizedBox(height: 4),
