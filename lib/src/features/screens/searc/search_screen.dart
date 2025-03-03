@@ -1,7 +1,11 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import '../../../core/model/document_model.dart';
 import '../../../core/providers/document_provider.dart';
 import 'package:provider/provider.dart';
+
+import '../other_screens/dcuments/document_detail_screen.dart';
 
 class SearchScreen extends StatefulWidget {
   final String selectedMenu;
@@ -368,8 +372,9 @@ class _SearchScreenState extends State<SearchScreen> {
                               },
                               options: [
                                 'Transcript',
+                                'Exam Paper',
+                                'Research Paper',
                                 'Letter',
-                                'Result',
                                 'Other'
                               ],
                             ),
@@ -411,65 +416,73 @@ class _SearchScreenState extends State<SearchScreen> {
                           ? 'Search Results'
                           : 'Recently Searched Documents';
 
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                resultsTitle,
-                                style: const TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              Text(
-                                '${results.length} document(s) found',
-                                style: TextStyle(
-                                  color: Colors.grey[600],
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-
-                          // Results table
-                          Expanded(
-                            child: provider.isLoading && results.isEmpty
-                                ? const Center(
-                                    child: CircularProgressIndicator())
-                                : Container(
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      borderRadius: BorderRadius.circular(8),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.grey.withOpacity(0.1),
-                                          spreadRadius: 1,
-                                          blurRadius: 2,
-                                        ),
-                                      ],
-                                    ),
-                                    child: results.isEmpty
-                                        ? Padding(
-                                            padding: const EdgeInsets.symmetric(
-                                              vertical: 32,
-                                              horizontal: 16,
-                                            ),
-                                            child: Center(
-                                              child: Text(
-                                                hasSearchCriteria
-                                                    ? 'No documents found. Try a different search.'
-                                                    : 'No recently searched documents.',
-                                              ),
-                                            ),
-                                          )
-                                        : _buildDocumentsList(
-                                            results, provider),
+                      return SingleChildScrollView(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  resultsTitle,
+                                  style: const TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
                                   ),
-                          ),
-                        ],
+                                ),
+                                Text(
+                                  '${results.length} document(s) found',
+                                  style: TextStyle(
+                                    color: Colors.grey[600],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+
+                            // Results table
+                            Padding(
+                              padding: const EdgeInsets.only(top: 10.0),
+                              child: Expanded(
+                                child: provider.isLoading && results.isEmpty
+                                    ? const Center(
+                                        child: CircularProgressIndicator())
+                                    : Container(
+                                        decoration: BoxDecoration(
+                                          color: Colors.blueGrey[50],
+                                          borderRadius:
+                                              BorderRadius.circular(8),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color:
+                                                  Colors.grey.withOpacity(0.1),
+                                              spreadRadius: 1,
+                                              blurRadius: 2,
+                                            ),
+                                          ],
+                                        ),
+                                        child: results.isEmpty
+                                            ? Padding(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                  vertical: 32,
+                                                  horizontal: 16,
+                                                ),
+                                                child: Center(
+                                                  child: Text(
+                                                    hasSearchCriteria
+                                                        ? 'No documents found. Try a different search.'
+                                                        : 'No recently searched documents.',
+                                                  ),
+                                                ),
+                                              )
+                                            : _buildDocumentsList(
+                                                results, provider),
+                                      ),
+                              ),
+                            )
+                          ],
+                        ),
                       );
                     },
                   ),
@@ -485,151 +498,132 @@ class _SearchScreenState extends State<SearchScreen> {
   Widget _buildDocumentsList(
       List<DocumentModel> documents, DocumentNavigationProvider provider) {
     print('Debug: Building list with ${documents.length} documents');
-    return Stack(
-      children: [
-        ListView.separated(
-          controller: _scrollController,
-          itemCount: documents.length + (_hasMoreItems ? 1 : 0),
-          separatorBuilder: (context, index) => const Divider(height: 1),
-          itemBuilder: (context, index) {
-            // Show loading indicator at the bottom while loading more items
-            if (index == documents.length) {
-              return Container(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                alignment: Alignment.center,
-                child: const CircularProgressIndicator(),
-              );
-            }
+    return ListView.separated(
+      controller: _scrollController,
+      shrinkWrap: true,
+      itemCount: documents.length + (_hasMoreItems ? 1 : 0),
+      separatorBuilder: (context, index) => const Divider(height: 1),
+      itemBuilder: (context, index) {
+        // Show loading indicator at the bottom while loading more items
+        if (index == documents.length) {
+          return Container(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            alignment: Alignment.center,
+            child: const CircularProgressIndicator(),
+          );
+        }
 
-            final doc = documents[index];
-            print('Debug: Rendering document ${doc.userName}');
-            if (doc.userName == null || doc.userName.isEmpty) {
-              print('Debug: Invalid document at index $index');
-              return ListTile(title: Text('Invalid Document'));
-            }
-            print('Debug: Rendering document ${doc.userName}');
-            return ListTile(
-              leading: Icon(
-                _getDocumentIcon(doc.documentType),
-                color: Colors.blue[800],
-              ),
-              title: Text(doc.userName ?? 'Unknown'),
-              // return ListTile(
-              //   leading: Icon(
-              //     _getDocumentIcon(doc.documentType),
-              //     color: Colors.blue[800],
-              //   ),
-              //   title: Text(doc.userName),
-              subtitle: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(doc.matricNumber),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.blue[50],
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          doc.documentType,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.blue[800],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.green[50],
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          doc.level,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.green[800],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              trailing: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    _formatDate(doc.timestamp),
-                    style: TextStyle(
-                      color: Colors.grey[600],
-                      fontSize: 12,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  IconButton(
-                    icon: const Icon(Icons.visibility_outlined),
-                    onPressed: () {
-                      _showDocumentPreview(doc);
-                    },
-                    tooltip: 'View',
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.download_outlined),
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                              'Download functionality will be implemented'),
-                        ),
-                      );
-                    },
-                    tooltip: 'Download',
-                  ),
-                ],
-              ),
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              visualDensity: VisualDensity.comfortable,
-              onTap: () => _showDocumentPreview(doc),
-            );
-          },
-        ),
-
-        // Overlay loading indicator
-        if (provider.isLoading && documents.isNotEmpty)
-          Positioned(
-            top: 10,
-            right: 10,
-            child: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(8),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.grey.withOpacity(0.3),
-                    spreadRadius: 1,
-                    blurRadius: 3,
-                  ),
-                ],
-              ),
-              child: const CircularProgressIndicator(
-                strokeWidth: 3,
-              ),
+        final doc = documents[index];
+        if (doc.userName == null || doc.userName.isEmpty) {
+          print('Debug: Invalid document at index $index');
+          return ListTile(title: Text('Invalid Document'));
+        }
+        print('Debug: Rendering document ${doc.userName}');
+        return Card(
+          elevation: 0,
+          child: ListTile(
+            leading: Icon(
+              _getDocumentIcon(doc.documentType),
+              color: Colors.blue[800],
             ),
+            title: Text(doc.userName ?? 'Unknown'),
+            // return ListTile(
+            //   leading: Icon(
+            //     _getDocumentIcon(doc.documentType),
+            //     color: Colors.blue[800],
+            //   ),
+            //   title: Text(doc.userName),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(doc.matricNumber),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.blue[50],
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        doc.documentType,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.blue[800],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.green[50],
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        doc.level,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.green[800],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  _formatDate(doc.timestamp),
+                  style: TextStyle(
+                    color: Colors.grey[600],
+                    fontSize: 12,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                IconButton(
+                  icon: const Icon(Icons.visibility_outlined),
+                  onPressed: () {
+                    _showDocumentPreview(doc);
+                  },
+                  tooltip: 'View',
+                ),
+                IconButton(
+                  icon: const Icon(Icons.download_outlined),
+                  onPressed: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content:
+                            Text('Download functionality will be implemented'),
+                      ),
+                    );
+                  },
+                  tooltip: 'Download',
+                ),
+              ],
+            ),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            visualDensity: VisualDensity.comfortable,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => DocumentDetailScreen(document: doc)),
+              );
+            },
           ),
-      ],
+        );
+      },
     );
   }
 
@@ -696,16 +690,19 @@ class _SearchScreenState extends State<SearchScreen> {
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   ElevatedButton.icon(
-                    icon: const Icon(Icons.download_outlined),
-                    label: const Text('Download'),
+                    icon: const Icon(Icons.close),
+                    label: const Text(
+                      'close',
+                      style: TextStyle(color: Colors.white),
+                    ),
                     onPressed: () {
                       Navigator.pop(context);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                              'Download functionality will be implemented'),
-                        ),
-                      );
+                      // ScaffoldMessenger.of(context).showSnackBar(
+                      //   const SnackBar(
+                      //     content: Text(
+                      //         'Download functionality will be implemented'),
+                      //   ),
+                      // );
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.blue[800],

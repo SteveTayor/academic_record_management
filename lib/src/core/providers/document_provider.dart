@@ -19,6 +19,10 @@ class DocumentNavigationProvider extends ChangeNotifier {
   bool _isLoading = false;
   String? _error;
 
+  DocumentModel? _lastDocument;
+  bool _hasMoreDocuments = true;
+  bool get hasMoreDocuments => _hasMoreDocuments;
+
   // Pagination for search results
   bool _hasMoreSearchResults = true;
   String? _lastDocumentId;
@@ -186,6 +190,38 @@ class DocumentNavigationProvider extends ChangeNotifier {
     }
   }
 
+  // Fetch more documents for lazy loading
+  Future<void> fetchMoreDocuments({
+    required DocumentModel startAfter,
+    int limit = 10,
+  }) async {
+    if (!_hasMoreDocuments || _isLoading) return;
+
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      final moreDocuments = await _documentService.fetchMoreDocuments(
+        startAfter: startAfter,
+        limit: limit,
+      );
+
+      if (moreDocuments.isEmpty) {
+        _hasMoreDocuments = false;
+      } else {
+        _recentDocuments.addAll(moreDocuments);
+        _lastDocument = moreDocuments.last;
+        _hasMoreDocuments = moreDocuments.length >= limit;
+      }
+    } catch (e) {
+      _error = e.toString();
+      // Don't update the UI with an error when fetching more - just stop
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   // Fetch total documents count
   Future<void> fetchTotalDocumentsCount() async {
     _logInfo('Fetching total documents count');
@@ -342,8 +378,10 @@ class DocumentNavigationProvider extends ChangeNotifier {
       }
 
       _setLoading(false);
+      notifyListeners();
     } catch (e, stackTrace) {
       _handleError('Error saving document: $e', stackTrace);
+      notifyListeners();
     }
   }
 
@@ -384,9 +422,11 @@ class DocumentNavigationProvider extends ChangeNotifier {
           'Document deleted successfully. New total count: $_totalDocumentsCount');
 
       _setLoading(false);
+      notifyListeners();
     } catch (e, stackTrace) {
       _logError('Deleting failed', e, stackTrace);
       _handleError('Error deleting document: $e', stackTrace);
+      notifyListeners();
     }
   }
 
@@ -420,9 +460,11 @@ class DocumentNavigationProvider extends ChangeNotifier {
       _logInfo('Updated document in search results list');
 
       _logSuccess('Document updated successfully: ${document.id}');
+      notifyListeners();
       _setLoading(false);
     } catch (e, stackTrace) {
       _handleError('Error updating document: $e', stackTrace);
+      notifyListeners();
     }
   }
 

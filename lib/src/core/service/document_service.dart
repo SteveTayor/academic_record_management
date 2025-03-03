@@ -199,6 +199,47 @@ class DocumentService {
     }
   }
 
+// Fetch more documents after a specific document (for lazy loading)
+  Future<List<DocumentModel>> fetchMoreDocuments({
+    required DocumentModel startAfter,
+    int limit = 10,
+  }) async {
+    try {
+      // Get the DocumentSnapshot for the startAfter document
+      DocumentSnapshot startAfterDoc;
+
+      // First try to get the reference directly if we have the full path
+      if (startAfter.id.contains('/')) {
+        startAfterDoc = await firestore.doc(startAfter.id).get();
+      } else {
+        // Otherwise search for it in the collection group
+        final query = await firestore
+            .collectionGroup('documents')
+            .where(FieldPath.documentId, isEqualTo: startAfter.id)
+            .limit(1)
+            .get();
+
+        if (query.docs.isEmpty) {
+          throw Exception('Start document not found');
+        }
+        startAfterDoc = query.docs.first;
+      }
+
+      final querySnapshot = await firestore
+          .collectionGroup('documents')
+          .orderBy('timestamp', descending: true)
+          .startAfterDocument(startAfterDoc)
+          .limit(limit)
+          .get();
+
+      return querySnapshot.docs.map((doc) {
+        return DocumentModel.fromMap(doc.id, doc.data());
+      }).toList();
+    } catch (e) {
+      throw Exception('Error fetching more documents: $e');
+    }
+  }
+
   // Helper method to suggest index creation
   String getIndexCreationUrl() {
     return 'https://console.firebase.google.com/v1/r/project/academic-archival-system/firestore/indexes?create_exemption=CmRwcm9qZWN0cy9hY2FkZW1pYy1hcmNoaXZhbC1zeXN0ZW0vZGF0YWJhc2VzLyhkZWZhdWx0KS9jb2xsZWN0aW9uR3JvdXBzL2RvY3VtZW50cy9maWVsZHMvdGltZXN0YW1wEAIaCAoEdGltZQ';
