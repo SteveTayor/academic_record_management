@@ -514,9 +514,9 @@ class _SearchScreenState extends State<SearchScreen> {
         }
 
         final doc = documents[index];
-        if (doc.userName == null || doc.userName.isEmpty) {
+        if (doc.userName.isEmpty) {
           print('Debug: Invalid document at index $index');
-          return ListTile(title: Text('Invalid Document'));
+          return const ListTile(title: Text('Invalid Document'));
         }
         print('Debug: Rendering document ${doc.userName}');
         return Card(

@@ -1170,8 +1170,8 @@ class _DashboardPageState extends State<DashboardPage> {
   static const Color black = Colors.black;
 
   // Pagination and lazy loading parameters
-  int _currentPage = 1;
-  int _rowsPerPage = 8;
+  final int _currentPage = 1;
+  final int _rowsPerPage = 8;
   bool _isLoadingMore = false;
   final ScrollController _scrollController = ScrollController();
 

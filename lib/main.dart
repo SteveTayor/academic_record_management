@@ -8,7 +8,6 @@ import 'src/core/providers/document_provider.dart';
 import 'src/core/service/firebase_services.dart';
 import 'src/settings/settings_controller.dart';
 import 'src/settings/settings_service.dart';
-import 'dart:developer' as developer;
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 
