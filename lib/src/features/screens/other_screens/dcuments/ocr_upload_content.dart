@@ -97,19 +97,6 @@ class _OcrUploadContentState extends State<OcrUploadContent> {
                 ],
               ),
               const SizedBox(height: 24),
-
-              // Row(
-              //   children: [
-              //     TextButton(
-              //       onPressed: () {
-              //         Navigator.popUntil(
-              //             context, (route) => route.settings.name == 'overview');
-              //       },
-              //       child: const Text('Documents'),
-              //     ),
-              //     const Text(' > OCR Upload'),
-              //   ],
-              // ),
               const SizedBox(height: 16),
               _isPreviewVisible ? _buildPreviewUI() : _buildUploadUI(),
             ],

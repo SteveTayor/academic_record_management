@@ -18,10 +18,6 @@ class AppConfig {
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-
-  // static const String _zeptoMailApiUrl = 'https://api.zeptomail.com/v1.1/email';
-  // static const String _apiKey =
-  // 'Zoho-enczapikey wSsVR61zqxfzXKl/nGasJr8/nFldD1/2EksviVX3unStH63L8Mcyl0bLBFKvH/dLRzJvFzsW8LkrnB5R2mAJj915zVoIDCiF9mqRe1U4J3x17qnvhDzOW2hVkhqLKYINxAtrmmlnEsAi+g==';
   static const String _fromEmail = 'noreply@joseph-jahazil.name.ng';
   final String _emailEndpoint = '${AppConfig.serverUrl}/send-email';
 

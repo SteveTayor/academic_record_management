@@ -1,4 +1,3 @@
-import 'package:archival_system/src/features/screens/other_screens/document_overview_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -10,7 +9,6 @@ import '../../widgets/dashboard_card.dart';
 import '../../widgets/sidebar.dart';
 import '../other_screens/dcuments/document_detail_screen.dart';
 import '../other_screens/dcuments/document_screen.dart';
-import '../other_screens/document_view_screen.dart';
 import '../other_screens/ocr_screen.dart';
 
 // class DashboardPage extends StatefulWidget {
@@ -1154,7 +1152,6 @@ import '../../../core/service/document_service.dart';
 import '../../widgets/dashboard_card.dart';
 import '../../widgets/sidebar.dart';
 import '../other_screens/dcuments/document_detail_screen.dart';
-import '../other_screens/document_overview_screen.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
