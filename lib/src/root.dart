@@ -33,6 +33,7 @@ class _RootPageState extends State<RootPage> {
     }
   }
 
+  //allow read, write: if request.auth != null && request.time < timestamp.date(2050, 1, 1);
   @override
   void dispose() {
     _networkChecker.dispose();

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
+import 'features/screens/dashborad/dashboard.dart';
 import 'settings/settings_controller.dart';
 
 /// The Widget that configures your application.
@@ -57,8 +58,8 @@ class MyApp extends StatelessWidget {
           theme: ThemeData(),
           darkTheme: ThemeData.dark(),
           themeMode: settingsController.themeMode,
-          home: const RootPage(),
-          // home: const DashboardPage(),
+          // home: const RootPage(),
+          home: const DashboardPage(),
           // Define a function to handle named routes in order to support
           // Flutter web url navigation and deep linking.
           // onGenerateRoute: (RouteSettings routeSettings) {
